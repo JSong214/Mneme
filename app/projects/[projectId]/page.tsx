@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  ArrowRight,
   ArrowLeft,
   FileText,
   MessageSquareText,
@@ -29,7 +30,8 @@ const workspaceItems = [
     title: "Documents",
     description: "Upload source files and track ingestion status.",
     icon: FileText,
-    status: "Next slice"
+    status: "Ready",
+    href: "documents"
   },
   {
     title: "Ask",
@@ -102,12 +104,8 @@ export default async function ProjectDetailPage({
         <section className="grid gap-4 md:grid-cols-2">
           {workspaceItems.map((item) => {
             const Icon = item.icon;
-
-            return (
-              <article
-                key={item.title}
-                className="rounded-lg border border-line bg-white p-5 shadow-soft"
-              >
+            const cardContent = (
+              <>
                 <div className="flex items-start justify-between gap-4">
                   <span className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                     <Icon aria-hidden="true" size={20} strokeWidth={2} />
@@ -123,7 +121,30 @@ export default async function ProjectDetailPage({
                   <p className="text-sm leading-6 text-slate-600">
                     {item.description}
                   </p>
+                  {"href" in item ? (
+                    <span className="inline-flex items-center gap-2 pt-2 text-sm font-semibold text-teal-700">
+                      Open
+                      <ArrowRight aria-hidden="true" size={16} />
+                    </span>
+                  ) : null}
                 </div>
+              </>
+            );
+
+            return "href" in item ? (
+              <Link
+                key={item.title}
+                href={`/projects/${project.id}/${item.href}`}
+                className="group rounded-lg border border-line bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              >
+                {cardContent}
+              </Link>
+            ) : (
+              <article
+                key={item.title}
+                className="rounded-lg border border-line bg-white p-5 shadow-soft"
+              >
+                {cardContent}
               </article>
             );
           })}

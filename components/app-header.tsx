@@ -10,7 +10,7 @@ export function AppHeader() {
             <BrainCircuit aria-hidden="true" size={20} strokeWidth={2.2} />
           </span>
           <span className="text-sm font-semibold tracking-normal text-ink">
-            Project Memory Assistant
+            Mneme
           </span>
         </Link>
         <nav aria-label="Primary" className="flex items-center gap-1 text-sm">

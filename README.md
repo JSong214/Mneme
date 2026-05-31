@@ -1,6 +1,6 @@
-# Project Memory Assistant
+# Mneme
 
-Project Memory Assistant 是一个用于保存和查询项目上下文的 AI app。
+Mneme(Project Memory Assistant) 是一个用于保存和查询项目上下文的 AI app。
 
 它的目标不是做一个泛用的 document chatbot，而是做一个更像真实产品的 structured project memory system：把零散的项目资料转成可检索的文本片段和结构化项目记忆，再通过 RAG、来源引用、结构化答案和轻量 eval 来回答项目问题。
 

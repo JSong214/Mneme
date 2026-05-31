@@ -1,4 +1,4 @@
-# Project Memory Assistant - Product Spec and Technical Design
+# Mneme - Product Spec and Technical Design
 
 ## 1. Product Concept
 

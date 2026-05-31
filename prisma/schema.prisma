@@ -13,6 +13,31 @@ model Project {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  documents   Document[]
 
   @@map("projects")
+}
+
+model Document {
+  id           String         @id @default(cuid())
+  projectId    String
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileName     String
+  mimeType     String
+  rawText      String
+  status       DocumentStatus @default(PROCESSING)
+  errorMessage String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([projectId, createdAt])
+  @@map("documents")
+}
+
+enum DocumentStatus {
+  PROCESSING @map("processing")
+  READY      @map("ready")
+  FAILED     @map("failed")
+
+  @@map("document_status")
 }

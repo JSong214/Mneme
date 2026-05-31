@@ -1,6 +1,6 @@
-# Project Memory Assistant
+# Mneme
 
-Project Memory Assistant is an AI app for preserving and querying project context from scattered team documents.
+Mneme(Project Memory Assistant) is an AI app for preserving and querying project context from scattered team documents.
 
 It is designed as a portfolio-grade AI engineering project: not a generic document chatbot, but a structured project memory system that combines RAG, extracted memories, source-grounded answers, and lightweight evals.
 
