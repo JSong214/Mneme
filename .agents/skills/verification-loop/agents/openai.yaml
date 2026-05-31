@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verification Loop"
+  short_description: "Run a structured pre-PR verification pass."
+  default_prompt: "Use $verification-loop to verify this change before I open a PR."

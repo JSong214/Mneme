@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Fix"
+  short_description: "Fix build and type errors with minimal diffs."
+  default_prompt: "Use $build-fix to get this project back to a green build with minimal changes."

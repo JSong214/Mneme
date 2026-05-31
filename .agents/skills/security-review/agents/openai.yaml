@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Review"
+  short_description: "Review risky changes for common vulnerabilities."
+  default_prompt: "Use $security-review to review this change for security risks before I ship it."

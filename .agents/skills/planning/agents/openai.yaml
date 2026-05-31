@@ -1,0 +1,4 @@
+interface:
+  display_name: "Planning"
+  short_description: "Create phased implementation plans."
+  default_prompt: "Use $planning to turn this request into a phased implementation plan."

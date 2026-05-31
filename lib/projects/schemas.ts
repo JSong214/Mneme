@@ -1,0 +1,16 @@
+import { z } from "zod";
+
+export const createProjectSchema = z.object({
+  name: z
+    .string({ required_error: "Project name is required." })
+    .trim()
+    .min(1, "Project name is required.")
+    .max(120, "Project name must be 120 characters or fewer."),
+  description: z
+    .string()
+    .trim()
+    .max(1000, "Description must be 1000 characters or fewer.")
+    .optional()
+});
+
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;

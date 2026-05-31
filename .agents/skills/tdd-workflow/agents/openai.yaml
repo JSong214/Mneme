@@ -1,0 +1,4 @@
+interface:
+  display_name: "TDD Workflow"
+  short_description: "Apply a test-first development workflow."
+  default_prompt: "Use $tdd-workflow to plan and execute a test-first implementation."
