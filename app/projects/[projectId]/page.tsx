@@ -19,7 +19,7 @@ type ProjectDetailPageProps = {
   };
 };
 
-const dateFormatter = new Intl.DateTimeFormat("en", {
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "long",
   day: "numeric",
   year: "numeric"
@@ -27,30 +27,30 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 
 const workspaceItems = [
   {
-    title: "Documents",
-    description: "Upload source files and track ingestion status.",
+    title: "文档",
+    description: "上传源文件并跟踪摄取状态。",
     icon: FileText,
-    status: "Ready",
+    status: "可用",
     href: "documents"
   },
   {
-    title: "Ask",
-    description: "Ask project questions with source-grounded evidence.",
+    title: "问答",
+    description: "基于来源证据提问项目问题。",
     icon: MessageSquareText,
-    status: "Planned"
+    status: "计划中"
   },
   {
-    title: "Memory",
-    description: "Browse decisions, action items, open questions, and risks.",
+    title: "记忆",
+    description: "浏览决策、行动项、待解问题和风险。",
     icon: TableProperties,
-    status: "Ready",
+    status: "可用",
     href: "memory"
   },
   {
-    title: "Eval",
-    description: "Check evidence recall and answer groundedness.",
+    title: "评估",
+    description: "检查证据召回和回答依据。",
     icon: Radar,
-    status: "Planned"
+    status: "计划中"
   }
 ];
 
@@ -72,7 +72,7 @@ export default async function ProjectDetailPage({
           className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
         >
           <ArrowLeft aria-hidden="true" size={16} />
-          Projects
+          项目列表
         </Link>
 
         <section className="rounded-lg border border-line bg-white p-6 shadow-soft sm:p-8">
@@ -82,18 +82,18 @@ export default async function ProjectDetailPage({
                 {project.name}
               </h1>
               <p className="text-base leading-7 text-slate-600">
-                {project.description ?? "No description"}
+                {project.description ?? "暂无简介"}
               </p>
             </div>
             <dl className="grid min-w-64 gap-3 text-sm">
               <div className="rounded-lg border border-line bg-slate-50 p-3">
-                <dt className="font-medium text-slate-500">Created</dt>
+                <dt className="font-medium text-slate-500">创建时间</dt>
                 <dd className="mt-1 font-semibold text-ink">
                   {dateFormatter.format(new Date(project.createdAt))}
                 </dd>
               </div>
               <div className="rounded-lg border border-line bg-slate-50 p-3">
-                <dt className="font-medium text-slate-500">Updated</dt>
+                <dt className="font-medium text-slate-500">更新时间</dt>
                 <dd className="mt-1 font-semibold text-ink">
                   {dateFormatter.format(new Date(project.updatedAt))}
                 </dd>
@@ -106,7 +106,7 @@ export default async function ProjectDetailPage({
           {workspaceItems.map((item) => {
             const Icon = item.icon;
             const statusClassName =
-              item.status === "Ready"
+              item.status === "可用"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                 : "border-amber-200 bg-amber-50 text-amber-700";
             const cardContent = (
@@ -130,7 +130,7 @@ export default async function ProjectDetailPage({
                   </p>
                   {"href" in item ? (
                     <span className="inline-flex items-center gap-2 pt-2 text-sm font-semibold text-teal-700">
-                      Open
+                      打开
                       <ArrowRight aria-hidden="true" size={16} />
                     </span>
                   ) : null}

@@ -34,29 +34,29 @@ type MemoryClientProps = {
 const memoryTabs = [
   {
     id: "decisions",
-    label: "Decisions",
+    label: "决策",
     icon: Lightbulb
   },
   {
     id: "actionItems",
-    label: "Action items",
+    label: "行动项",
     icon: ClipboardList
   },
   {
     id: "openQuestions",
-    label: "Open questions",
+    label: "待解问题",
     icon: CircleHelp
   },
   {
     id: "risks",
-    label: "Risks",
+    label: "风险",
     icon: ShieldAlert
   }
 ] as const;
 
 type MemoryTabId = (typeof memoryTabs)[number]["id"];
 
-const dateTimeFormatter = new Intl.DateTimeFormat("en", {
+const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "short",
   day: "numeric",
   year: "numeric",
@@ -64,7 +64,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en", {
   minute: "2-digit"
 });
 
-const dateFormatter = new Intl.DateTimeFormat("en", {
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "short",
   day: "numeric",
   year: "numeric"
@@ -77,9 +77,9 @@ const actionStatusStyles: Record<ActionItemStatusDto, string> = {
 };
 
 const actionStatusLabels: Record<ActionItemStatusDto, string> = {
-  open: "Open",
-  in_progress: "In progress",
-  done: "Done"
+  open: "未开始",
+  in_progress: "进行中",
+  done: "已完成"
 };
 
 const riskSeverityStyles: Record<RiskSeverityDto, string> = {
@@ -89,9 +89,9 @@ const riskSeverityStyles: Record<RiskSeverityDto, string> = {
 };
 
 const riskSeverityLabels: Record<RiskSeverityDto, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High"
+  low: "低",
+  medium: "中",
+  high: "高"
 };
 
 export function MemoryClient({
@@ -103,25 +103,25 @@ export function MemoryClient({
 
   const summaryItems = [
     {
-      label: "Decisions",
+      label: "决策",
       value: initialSummary.decisions,
       icon: Lightbulb,
       className: "border-teal-200 bg-teal-50 text-teal-700"
     },
     {
-      label: "Action items",
+      label: "行动项",
       value: initialSummary.actionItems,
       icon: ClipboardList,
       className: "border-sky-200 bg-sky-50 text-sky-700"
     },
     {
-      label: "Open questions",
+      label: "待解问题",
       value: initialSummary.openQuestions,
       icon: CircleHelp,
       className: "border-amber-200 bg-amber-50 text-amber-700"
     },
     {
-      label: "Risks",
+      label: "风险",
       value: initialSummary.risks,
       icon: ShieldAlert,
       className: "border-red-200 bg-red-50 text-red-700"
@@ -134,16 +134,16 @@ export function MemoryClient({
         <div className="min-w-0 space-y-3">
           <p className="text-sm font-semibold text-teal-700">{projectName}</p>
           <h1 className="text-4xl font-semibold tracking-normal text-ink">
-            Memory
+            项目记忆
           </h1>
           <p className="max-w-2xl text-base leading-7 text-slate-600">
-            Extracted project context from uploaded documents.
+            从已上传文档中提取出的项目上下文。
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
           <TableProperties aria-hidden="true" size={18} className="text-teal-600" />
           {initialSummary.total}{" "}
-          {initialSummary.total === 1 ? "memory" : "memories"}
+          条记忆
         </div>
       </section>
 
@@ -172,7 +172,7 @@ export function MemoryClient({
         <section className="space-y-5">
           <div
             role="tablist"
-            aria-label="Memory types"
+            aria-label="记忆类型"
             className="grid gap-2 rounded-lg border border-line bg-white p-2 shadow-soft sm:grid-cols-2 lg:grid-cols-4"
           >
             {memoryTabs.map((tab) => {
@@ -230,7 +230,7 @@ function renderMemoryList(
         ))}
       </div>
     ) : (
-      <EmptyTabState label="decisions" />
+      <EmptyTabState label="决策" />
     );
   }
 
@@ -242,7 +242,7 @@ function renderMemoryList(
         ))}
       </div>
     ) : (
-      <EmptyTabState label="action items" />
+      <EmptyTabState label="行动项" />
     );
   }
 
@@ -257,7 +257,7 @@ function renderMemoryList(
         ))}
       </div>
     ) : (
-      <EmptyTabState label="open questions" />
+      <EmptyTabState label="待解问题" />
     );
   }
 
@@ -268,7 +268,7 @@ function renderMemoryList(
       ))}
     </div>
   ) : (
-    <EmptyTabState label="risks" />
+    <EmptyTabState label="风险" />
   );
 }
 
@@ -290,7 +290,7 @@ function DecisionCard({ decision }: { decision: DecisionMemoryDto }) {
           </div>
 
           {decision.rationale ? (
-            <LabeledText label="Rationale" text={decision.rationale} />
+            <LabeledText label="理由" text={decision.rationale} />
           ) : null}
 
           {decision.participants.length > 0 ? (
@@ -350,7 +350,7 @@ function ActionItemCard({
           <div className="flex flex-wrap gap-2 text-sm text-slate-600">
             <MetaPill
               icon={UserRound}
-              label={actionItem.owner ?? "Unassigned"}
+              label={actionItem.owner ?? "未分配"}
             />
             <MetaPill
               icon={CalendarClock}
@@ -398,7 +398,7 @@ function OpenQuestionCard({
 
           <MetaPill
             icon={UserRound}
-            label={openQuestion.owner ?? "Unassigned"}
+            label={openQuestion.owner ?? "未分配"}
           />
         </div>
 
@@ -438,7 +438,7 @@ function RiskCard({ risk }: { risk: RiskMemoryDto }) {
           </div>
 
           {risk.mitigation ? (
-            <LabeledText label="Mitigation" text={risk.mitigation} />
+            <LabeledText label="缓解措施" text={risk.mitigation} />
           ) : null}
         </div>
 
@@ -534,11 +534,10 @@ function EmptyMemoryState() {
         <TableProperties aria-hidden="true" size={24} strokeWidth={2} />
       </div>
       <h2 className="text-xl font-semibold tracking-normal text-ink">
-        No memory yet
+        暂无项目记忆
       </h2>
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-        Upload documents and complete ingestion to browse extracted project
-        memory.
+        上传文档并完成摄取后，即可浏览提取出的项目记忆。
       </p>
     </section>
   );
@@ -553,17 +552,17 @@ function EmptyTabState({ label }: { label: string }) {
         className="mb-3 text-slate-400"
       />
       <h2 className="text-lg font-semibold tracking-normal text-ink">
-        No {label}
+        暂无{label}
       </h2>
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-        This project has no extracted {label}.
+        该项目尚未提取出{label}。
       </p>
     </div>
   );
 }
 
 function formatDate(value: string | null) {
-  return value ? dateFormatter.format(new Date(value)) : "No date";
+  return value ? dateFormatter.format(new Date(value)) : "无日期";
 }
 
 function formatDateTime(value: string) {

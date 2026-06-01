@@ -27,7 +27,7 @@ type ApiCreateProjectResponse =
       };
     };
 
-const dateFormatter = new Intl.DateTimeFormat("en", {
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "short",
   day: "numeric",
   year: "numeric",
@@ -63,7 +63,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
         setError(
           "error" in payload
             ? payload.error.message
-            : "Unable to create project.",
+            : "无法创建项目。",
         );
         return;
       }
@@ -73,7 +73,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
       setDescription("");
       router.refresh();
     } catch {
-      setError("Unable to create project.");
+      setError("无法创建项目。");
     } finally {
       setIsSubmitting(false);
     }
@@ -93,7 +93,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
             <Layers3 aria-hidden="true" size={18} className="text-teal-600" />
-            {projects.length} {projects.length === 1 ? "project" : "projects"}
+            {projects.length} 个项目
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
                     {project.name}
                   </h2>
                   <p className="line-clamp-2 text-sm leading-6 text-slate-600">
-                    {project.description ?? "No description"}
+                    {project.description ?? "暂无简介"}
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-4 text-sm text-slate-500 sm:flex-col sm:items-end">
@@ -119,7 +119,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
                     {dateFormatter.format(new Date(project.updatedAt))}
                   </span>
                   <span className="inline-flex items-center gap-2 font-semibold text-teal-700">
-                    Open
+                    打开
                     <ArrowRight
                       aria-hidden="true"
                       size={16}

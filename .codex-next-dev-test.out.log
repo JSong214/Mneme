@@ -1,0 +1,112 @@
+
+> project-memory-assistant@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.15
+  - Local:        http://localhost:3001
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 9.2s
+ ○ Compiling /projects ...
+ ✓ Compiled /projects in 3.4s (531 modules)
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."createdAt", "public"."projects"."updatedAt" FROM "public"."projects" WHERE 1=1 ORDER BY "public"."projects"."updatedAt" DESC OFFSET $1
+ GET /projects 200 in 4189ms
+ ✓ Compiled /api/projects in 433ms (307 modules)
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."projects" ("id","name","description","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5) RETURNING "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."createdAt", "public"."projects"."updatedAt"
+ POST /api/projects 201 in 1380ms
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."projects" ("id","name","description","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5) RETURNING "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."createdAt", "public"."projects"."updatedAt"
+ POST /api/projects 201 in 160ms
+ ○ Compiling /api/projects/[projectId]/documents ...
+ ✓ Compiled /api/projects/[projectId]/documents in 2.2s (80 modules)
+prisma:query SELECT "public"."projects"."id" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."documents" ("id","projectId","fileName","mimeType","rawText","status","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."document_status"),$7,$8) RETURNING "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt"
+prisma:query SELECT "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt" FROM "public"."documents" WHERE ("public"."documents"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query UPDATE "public"."documents" SET "status" = CAST($1::text AS "public"."document_status"), "errorMessage" = $2, "updatedAt" = $3 WHERE ("public"."documents"."id" = $4 AND 1=1) RETURNING "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt"
+prisma:query UPDATE "public"."documents" SET "status" = CAST($1::text AS "public"."document_status"), "errorMessage" = $2, "updatedAt" = $3 WHERE ("public"."documents"."id" = $4 AND 1=1) RETURNING "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt"
+prisma:query SELECT "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt", COALESCE("aggr_selection_0_Chunk"."_aggr_count_chunks", 0) AS "_aggr_count_chunks", COALESCE("aggr_selection_1_Decision"."_aggr_count_decisions", 0) AS "_aggr_count_decisions", COALESCE("aggr_selection_2_ActionItem"."_aggr_count_actionItems", 0) AS "_aggr_count_actionItems", COALESCE("aggr_selection_3_OpenQuestion"."_aggr_count_openQuestions", 0) AS "_aggr_count_openQuestions", COALESCE("aggr_selection_4_Risk"."_aggr_count_risks", 0) AS "_aggr_count_risks" FROM "public"."documents" LEFT JOIN (SELECT "public"."chunks"."documentId", COUNT(*) AS "_aggr_count_chunks" FROM "public"."chunks" WHERE 1=1 GROUP BY "public"."chunks"."documentId") AS "aggr_selection_0_Chunk" ON ("public"."documents"."id" = "aggr_selection_0_Chunk"."documentId") LEFT JOIN (SELECT "public"."decisions"."documentId", COUNT(*) AS "_aggr_count_decisions" FROM "public"."decisions" WHERE 1=1 GROUP BY "public"."decisions"."documentId") AS "aggr_selection_1_Decision" ON ("public"."documents"."id" = "aggr_selection_1_Decision"."documentId") LEFT JOIN (SELECT "public"."action_items"."documentId", COUNT(*) AS "_aggr_count_actionItems" FROM "public"."action_items" WHERE 1=1 GROUP BY "public"."action_items"."documentId") AS "aggr_selection_2_ActionItem" ON ("public"."documents"."id" = "aggr_selection_2_ActionItem"."documentId") LEFT JOIN (SELECT "public"."open_questions"."documentId", COUNT(*) AS "_aggr_count_openQuestions" FROM "public"."open_questions" WHERE 1=1 GROUP BY "public"."open_questions"."documentId") AS "aggr_selection_3_OpenQuestion" ON ("public"."documents"."id" = "aggr_selection_3_OpenQuestion"."documentId") LEFT JOIN (SELECT "public"."risks"."documentId", COUNT(*) AS "_aggr_count_risks" FROM "public"."risks" WHERE 1=1 GROUP BY "public"."risks"."documentId") AS "aggr_selection_4_Risk" ON ("public"."documents"."id" = "aggr_selection_4_Risk"."documentId") WHERE "public"."documents"."projectId" = $1 ORDER BY "public"."documents"."createdAt" DESC OFFSET $2
+ POST /api/projects/cmpvfxour00017a1cwc3hegd0/documents 201 in 11439ms
+ ○ Compiling /api/projects/[projectId]/memories ...
+ ✓ Compiled /api/projects/[projectId]/memories in 1042ms (84 modules)
+prisma:query SELECT "public"."projects"."id" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query SELECT "public"."decisions"."id", "public"."decisions"."projectId", "public"."decisions"."documentId", "public"."decisions"."title", "public"."decisions"."summary", "public"."decisions"."rationale", "public"."decisions"."date", "public"."decisions"."participants", "public"."decisions"."sourceQuote", "public"."decisions"."createdAt" FROM "public"."decisions" WHERE "public"."decisions"."projectId" = $1 ORDER BY "public"."decisions"."date" DESC, "public"."decisions"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."action_items"."id", "public"."action_items"."projectId", "public"."action_items"."documentId", "public"."action_items"."title", "public"."action_items"."description", "public"."action_items"."owner", "public"."action_items"."dueDate", "public"."action_items"."status"::text, "public"."action_items"."sourceQuote", "public"."action_items"."createdAt" FROM "public"."action_items" WHERE "public"."action_items"."projectId" = $1 ORDER BY "public"."action_items"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."open_questions"."id", "public"."open_questions"."projectId", "public"."open_questions"."documentId", "public"."open_questions"."question", "public"."open_questions"."context", "public"."open_questions"."owner", "public"."open_questions"."sourceQuote", "public"."open_questions"."createdAt" FROM "public"."open_questions" WHERE "public"."open_questions"."projectId" = $1 ORDER BY "public"."open_questions"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."risks"."id", "public"."risks"."projectId", "public"."risks"."documentId", "public"."risks"."title", "public"."risks"."description", "public"."risks"."severity"::text, "public"."risks"."mitigation", "public"."risks"."sourceQuote", "public"."risks"."createdAt" FROM "public"."risks" WHERE "public"."risks"."projectId" = $1 ORDER BY "public"."risks"."severity" DESC, "public"."risks"."createdAt" DESC OFFSET $2
+prisma:query COMMIT
+ GET /api/projects/cmpvfxour00017a1cwc3hegd0/memories 200 in 2291ms
+ ✓ Compiled in 12.1s (353 modules)
+prisma:query SELECT 1
+prisma:query INSERT INTO "public"."projects" ("id","name","description","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5) RETURNING "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."createdAt", "public"."projects"."updatedAt"
+ POST /api/projects 201 in 275ms
+prisma:query SELECT "public"."projects"."id" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."documents" ("id","projectId","fileName","mimeType","rawText","status","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."document_status"),$7,$8) RETURNING "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt"
+prisma:query SELECT "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt" FROM "public"."documents" WHERE ("public"."documents"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query UPDATE "public"."documents" SET "status" = CAST($1::text AS "public"."document_status"), "errorMessage" = $2, "updatedAt" = $3 WHERE ("public"."documents"."id" = $4 AND 1=1) RETURNING "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt"
+prisma:query BEGIN
+prisma:query DELETE FROM "chunks" WHERE "documentId" = $1
+prisma:query DELETE FROM "public"."decisions" WHERE "public"."decisions"."documentId" = $1
+prisma:query DELETE FROM "public"."action_items" WHERE "public"."action_items"."documentId" = $1
+prisma:query DELETE FROM "public"."open_questions" WHERE "public"."open_questions"."documentId" = $1
+prisma:query DELETE FROM "public"."risks" WHERE "public"."risks"."documentId" = $1
+prisma:query 
+    INSERT INTO "chunks" (
+      "id",
+      "projectId",
+      "documentId",
+      "content",
+      "chunkIndex",
+      "tokenCount",
+      "embedding",
+      "createdAt"
+    )
+    VALUES (
+      $1,
+      $2,
+      $3,
+      $4,
+      $5,
+      $6,
+      $7::vector,
+      CURRENT_TIMESTAMP
+    )
+  
+prisma:query INSERT INTO "public"."decisions" ("date","createdAt","rationale","title","documentId","summary","id","participants","sourceQuote","projectId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+prisma:query INSERT INTO "public"."action_items" ("sourceQuote","projectId","title","status","documentId","description","id","dueDate","createdAt","owner") VALUES ($1,$2,$3,CAST($4::text AS "public"."action_item_status"),$5,$6,$7,$8,$9,$10)
+prisma:query INSERT INTO "public"."open_questions" ("sourceQuote","id","owner","projectId","createdAt","context","documentId","question") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+prisma:query INSERT INTO "public"."risks" ("severity","sourceQuote","projectId","mitigation","id","documentId","description","title","createdAt") VALUES (CAST($1::text AS "public"."risk_severity"),$2,$3,$4,$5,$6,$7,$8,$9)
+prisma:query UPDATE "public"."documents" SET "status" = CAST($1::text AS "public"."document_status"), "errorMessage" = $2, "updatedAt" = $3 WHERE ("public"."documents"."id" = $4 AND 1=1) RETURNING "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt"
+prisma:query COMMIT
+prisma:query SELECT "public"."documents"."id", "public"."documents"."projectId", "public"."documents"."fileName", "public"."documents"."mimeType", "public"."documents"."rawText", "public"."documents"."status"::text, "public"."documents"."errorMessage", "public"."documents"."createdAt", "public"."documents"."updatedAt", COALESCE("aggr_selection_0_Chunk"."_aggr_count_chunks", 0) AS "_aggr_count_chunks", COALESCE("aggr_selection_1_Decision"."_aggr_count_decisions", 0) AS "_aggr_count_decisions", COALESCE("aggr_selection_2_ActionItem"."_aggr_count_actionItems", 0) AS "_aggr_count_actionItems", COALESCE("aggr_selection_3_OpenQuestion"."_aggr_count_openQuestions", 0) AS "_aggr_count_openQuestions", COALESCE("aggr_selection_4_Risk"."_aggr_count_risks", 0) AS "_aggr_count_risks" FROM "public"."documents" LEFT JOIN (SELECT "public"."chunks"."documentId", COUNT(*) AS "_aggr_count_chunks" FROM "public"."chunks" WHERE 1=1 GROUP BY "public"."chunks"."documentId") AS "aggr_selection_0_Chunk" ON ("public"."documents"."id" = "aggr_selection_0_Chunk"."documentId") LEFT JOIN (SELECT "public"."decisions"."documentId", COUNT(*) AS "_aggr_count_decisions" FROM "public"."decisions" WHERE 1=1 GROUP BY "public"."decisions"."documentId") AS "aggr_selection_1_Decision" ON ("public"."documents"."id" = "aggr_selection_1_Decision"."documentId") LEFT JOIN (SELECT "public"."action_items"."documentId", COUNT(*) AS "_aggr_count_actionItems" FROM "public"."action_items" WHERE 1=1 GROUP BY "public"."action_items"."documentId") AS "aggr_selection_2_ActionItem" ON ("public"."documents"."id" = "aggr_selection_2_ActionItem"."documentId") LEFT JOIN (SELECT "public"."open_questions"."documentId", COUNT(*) AS "_aggr_count_openQuestions" FROM "public"."open_questions" WHERE 1=1 GROUP BY "public"."open_questions"."documentId") AS "aggr_selection_3_OpenQuestion" ON ("public"."documents"."id" = "aggr_selection_3_OpenQuestion"."documentId") LEFT JOIN (SELECT "public"."risks"."documentId", COUNT(*) AS "_aggr_count_risks" FROM "public"."risks" WHERE 1=1 GROUP BY "public"."risks"."documentId") AS "aggr_selection_4_Risk" ON ("public"."documents"."id" = "aggr_selection_4_Risk"."documentId") WHERE "public"."documents"."projectId" = $1 ORDER BY "public"."documents"."createdAt" DESC OFFSET $2
+ POST /api/projects/cmpvfyw3600047a1cyex4dx6b/documents 201 in 6726ms
+prisma:query SELECT "public"."projects"."id" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query SELECT "public"."decisions"."id", "public"."decisions"."projectId", "public"."decisions"."documentId", "public"."decisions"."title", "public"."decisions"."summary", "public"."decisions"."rationale", "public"."decisions"."date", "public"."decisions"."participants", "public"."decisions"."sourceQuote", "public"."decisions"."createdAt" FROM "public"."decisions" WHERE "public"."decisions"."projectId" = $1 ORDER BY "public"."decisions"."date" DESC, "public"."decisions"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."action_items"."id", "public"."action_items"."projectId", "public"."action_items"."documentId", "public"."action_items"."title", "public"."action_items"."description", "public"."action_items"."owner", "public"."action_items"."dueDate", "public"."action_items"."status"::text, "public"."action_items"."sourceQuote", "public"."action_items"."createdAt" FROM "public"."action_items" WHERE "public"."action_items"."projectId" = $1 ORDER BY "public"."action_items"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."open_questions"."id", "public"."open_questions"."projectId", "public"."open_questions"."documentId", "public"."open_questions"."question", "public"."open_questions"."context", "public"."open_questions"."owner", "public"."open_questions"."sourceQuote", "public"."open_questions"."createdAt" FROM "public"."open_questions" WHERE "public"."open_questions"."projectId" = $1 ORDER BY "public"."open_questions"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."risks"."id", "public"."risks"."projectId", "public"."risks"."documentId", "public"."risks"."title", "public"."risks"."description", "public"."risks"."severity"::text, "public"."risks"."mitigation", "public"."risks"."sourceQuote", "public"."risks"."createdAt" FROM "public"."risks" WHERE "public"."risks"."projectId" = $1 ORDER BY "public"."risks"."severity" DESC, "public"."risks"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query COMMIT
+ GET /api/projects/cmpvfyw3600047a1cyex4dx6b/memories 200 in 91ms
+ ○ Compiling /projects/[projectId]/memory ...
+ ✓ Compiled /projects/[projectId]/memory in 2.6s (600 modules)
+prisma:query SELECT 1
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."createdAt", "public"."projects"."updatedAt" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query SELECT "public"."decisions"."id", "public"."decisions"."projectId", "public"."decisions"."documentId", "public"."decisions"."title", "public"."decisions"."summary", "public"."decisions"."rationale", "public"."decisions"."date", "public"."decisions"."participants", "public"."decisions"."sourceQuote", "public"."decisions"."createdAt" FROM "public"."decisions" WHERE "public"."decisions"."projectId" = $1 ORDER BY "public"."decisions"."date" DESC, "public"."decisions"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."action_items"."id", "public"."action_items"."projectId", "public"."action_items"."documentId", "public"."action_items"."title", "public"."action_items"."description", "public"."action_items"."owner", "public"."action_items"."dueDate", "public"."action_items"."status"::text, "public"."action_items"."sourceQuote", "public"."action_items"."createdAt" FROM "public"."action_items" WHERE "public"."action_items"."projectId" = $1 ORDER BY "public"."action_items"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."open_questions"."id", "public"."open_questions"."projectId", "public"."open_questions"."documentId", "public"."open_questions"."question", "public"."open_questions"."context", "public"."open_questions"."owner", "public"."open_questions"."sourceQuote", "public"."open_questions"."createdAt" FROM "public"."open_questions" WHERE "public"."open_questions"."projectId" = $1 ORDER BY "public"."open_questions"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."risks"."id", "public"."risks"."projectId", "public"."risks"."documentId", "public"."risks"."title", "public"."risks"."description", "public"."risks"."severity"::text, "public"."risks"."mitigation", "public"."risks"."sourceQuote", "public"."risks"."createdAt" FROM "public"."risks" WHERE "public"."risks"."projectId" = $1 ORDER BY "public"."risks"."severity" DESC, "public"."risks"."createdAt" DESC OFFSET $2
+prisma:query SELECT "public"."documents"."id", "public"."documents"."fileName" FROM "public"."documents" WHERE "public"."documents"."id" IN ($1) OFFSET $2
+prisma:query COMMIT
+ GET /projects/cmpvfyw3600047a1cyex4dx6b/memory 200 in 5059ms

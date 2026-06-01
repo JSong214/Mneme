@@ -34,7 +34,7 @@ type ApiDocumentsResponse =
       };
     };
 
-const dateFormatter = new Intl.DateTimeFormat("en", {
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "short",
   day: "numeric",
   year: "numeric",
@@ -49,9 +49,9 @@ const statusStyles: Record<DocumentStatusDto, string> = {
 };
 
 const statusLabels: Record<DocumentStatusDto, string> = {
-  processing: "Processing",
-  ready: "Ready",
-  failed: "Failed"
+  processing: "处理中",
+  ready: "可用",
+  failed: "失败"
 };
 
 export function DocumentsClient({
@@ -76,7 +76,7 @@ export function DocumentsClient({
     const files = Array.from(fileInputRef.current?.files ?? []);
 
     if (files.length === 0) {
-      setError("Upload at least one .md or .txt document.");
+      setError("请至少上传一个 .md 或 .txt 文档。");
       return;
     }
 
@@ -96,7 +96,7 @@ export function DocumentsClient({
         setError(
           "error" in payload
             ? payload.error.message
-            : "Unable to upload documents."
+            : "无法上传文档。"
         );
         return;
       }
@@ -107,7 +107,7 @@ export function DocumentsClient({
       setFileInputKey((currentKey) => currentKey + 1);
       router.refresh();
     } catch {
-      setError("Unable to upload documents.");
+      setError("无法上传文档。");
     } finally {
       setIsUploading(false);
     }
@@ -115,25 +115,25 @@ export function DocumentsClient({
 
   const summaryItems = [
     {
-      label: "Total",
+      label: "总数",
       value: summary.total,
       icon: Files,
       className: "border-slate-200 bg-white text-ink"
     },
     {
-      label: "Ready",
+      label: "可用",
       value: summary.ready,
       icon: CheckCircle2,
       className: "border-emerald-200 bg-emerald-50 text-emerald-700"
     },
     {
-      label: "Processing",
+      label: "处理中",
       value: summary.processing,
       icon: LoaderCircle,
       className: "border-sky-200 bg-sky-50 text-sky-700"
     },
     {
-      label: "Failed",
+      label: "失败",
       value: summary.failed,
       icon: AlertTriangle,
       className: "border-red-200 bg-red-50 text-red-700"
@@ -147,15 +147,15 @@ export function DocumentsClient({
           <div className="space-y-3">
             <p className="text-sm font-semibold text-teal-700">{projectName}</p>
             <h1 className="text-4xl font-semibold tracking-normal text-ink">
-              Documents
+              文档
             </h1>
             <p className="max-w-2xl text-base leading-7 text-slate-600">
-              Uploaded source files, retrievable chunks, and extracted memory.
+              已上传的源文件、可检索片段和提取出的项目记忆。
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
             <Files aria-hidden="true" size={18} className="text-teal-600" />
-            {summary.total} {summary.total === 1 ? "document" : "documents"}
+            {summary.total} 个文档
           </div>
         </div>
 
@@ -219,10 +219,10 @@ export function DocumentsClient({
                     {dateFormatter.format(new Date(document.createdAt))}
                   </span>
                   <span className="font-semibold text-slate-700">
-                    {document.chunkCount} chunks
+                    {document.chunkCount} 个片段
                   </span>
                   <span className="font-semibold text-slate-700">
-                    {document.extractedMemoryCount} memories
+                    {document.extractedMemoryCount} 条记忆
                   </span>
                 </div>
               </article>
@@ -234,10 +234,10 @@ export function DocumentsClient({
               <FileText aria-hidden="true" size={24} strokeWidth={2} />
             </div>
             <h2 className="text-xl font-semibold tracking-normal text-ink">
-              No documents yet
+              暂无文档
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-              Upload project notes, decisions, or meeting records.
+              上传项目笔记、决策记录或会议纪要。
             </p>
           </div>
         )}
@@ -251,9 +251,9 @@ export function DocumentsClient({
             </span>
             <div>
               <h2 className="text-lg font-semibold tracking-normal text-ink">
-                Upload documents
+                上传文档
               </h2>
-              <p className="text-sm text-slate-500">.md and .txt files</p>
+              <p className="text-sm text-slate-500">.md 和 .txt 文件</p>
             </div>
           </div>
 
@@ -262,7 +262,7 @@ export function DocumentsClient({
               htmlFor="document-files"
               className="text-sm font-medium text-ink"
             >
-              Files
+              文件
             </label>
             <input
               key={fileInputKey}
@@ -280,8 +280,8 @@ export function DocumentsClient({
             />
             <p className="text-sm text-slate-500">
               {selectedFileCount > 0
-                ? `${selectedFileCount} selected`
-                : "No files selected"}
+                ? `已选择 ${selectedFileCount} 个文件`
+                : "未选择文件"}
             </p>
           </div>
 
@@ -297,7 +297,7 @@ export function DocumentsClient({
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             <UploadCloud aria-hidden="true" size={18} />
-            {isUploading ? "Uploading" : "Upload"}
+            {isUploading ? "上传中..." : "上传"}
           </button>
         </form>
       </aside>

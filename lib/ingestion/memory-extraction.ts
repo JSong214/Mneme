@@ -4,6 +4,9 @@ import type { TextChunk } from "@/lib/ingestion/chunking";
 
 const MAX_EXTRACTION_GROUP_CHARACTERS = 24_000;
 
+const MEMORY_EXTRACTION_SYSTEM_PROMPT =
+  "从源文本中提取结构化项目记忆。只提取源文本明确表达的事实，不要猜测或补充。除 sourceQuote、date、dueDate、status、severity 外，所有面向用户展示的字段必须使用简体中文；必要时保留英文技术术语、API 名称、产品名、人名和文件名原文。只有在字段确实未知时才使用空字符串；一旦创建某条记忆，title、summary、description、question 和 sourceQuote 等核心必填字段必须非空，并基于源文本事实用中文概括。date 和 dueDate 如能确定，请使用 YYYY-MM-DD；否则使用空字符串。sourceQuote 必须是源文本中的简短原文引用，不要翻译或改写。status 和 severity 必须使用 JSON schema 中定义的英文枚举值。只返回符合 JSON schema 的内容，不要输出额外说明。";
+
 const extractionResultSchema = z.object({
   decisions: z.array(
     z.object({
@@ -156,16 +159,15 @@ export async function extractStructuredMemories(
       [
         {
           role: "system",
-          content:
-            "Extract structured project memories from source text. Include only facts that are explicit in the source. Use empty strings when a field is unknown. Keep sourceQuote as a short exact quote from the source. Return no prose outside the JSON schema."
+          content: MEMORY_EXTRACTION_SYSTEM_PROMPT
         },
         {
           role: "user",
           content: [
-            `Document: ${documentName}`,
-            `Chunk group: ${index + 1} of ${groups.length}`,
-            "Extract decisions, action items, open questions, and risks from this source text.",
-            "Source text:",
+            `文档: ${documentName}`,
+            `文本分组: 第 ${index + 1} 组，共 ${groups.length} 组`,
+            "请从以下源文本中提取决策、行动项、待解问题和风险。",
+            "源文本:",
             groups[index]
           ].join("\n\n")
         }
