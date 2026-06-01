@@ -18,7 +18,7 @@ export function AppHeader() {
             href="/projects"
             className="rounded-lg px-3 py-2 font-medium text-slate-700 transition hover:bg-slate-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           >
-            Projects
+            首页
           </Link>
         </nav>
       </div>

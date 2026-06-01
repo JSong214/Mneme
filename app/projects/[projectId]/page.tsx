@@ -43,7 +43,8 @@ const workspaceItems = [
     title: "Memory",
     description: "Browse decisions, action items, open questions, and risks.",
     icon: TableProperties,
-    status: "Planned"
+    status: "Ready",
+    href: "memory"
   },
   {
     title: "Eval",
@@ -104,13 +105,19 @@ export default async function ProjectDetailPage({
         <section className="grid gap-4 md:grid-cols-2">
           {workspaceItems.map((item) => {
             const Icon = item.icon;
+            const statusClassName =
+              item.status === "Ready"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-700";
             const cardContent = (
               <>
                 <div className="flex items-start justify-between gap-4">
                   <span className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                     <Icon aria-hidden="true" size={20} strokeWidth={2} />
                   </span>
-                  <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                  <span
+                    className={`rounded-lg border px-2 py-1 text-xs font-semibold ${statusClassName}`}
+                  >
                     {item.status}
                   </span>
                 </div>

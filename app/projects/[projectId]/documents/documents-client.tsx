@@ -150,7 +150,7 @@ export function DocumentsClient({
               Documents
             </h1>
             <p className="max-w-2xl text-base leading-7 text-slate-600">
-              Uploaded source files and ingestion status.
+              Uploaded source files, retrievable chunks, and extracted memory.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
@@ -217,6 +217,9 @@ export function DocumentsClient({
                   <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     <Clock3 aria-hidden="true" size={16} />
                     {dateFormatter.format(new Date(document.createdAt))}
+                  </span>
+                  <span className="font-semibold text-slate-700">
+                    {document.chunkCount} chunks
                   </span>
                   <span className="font-semibold text-slate-700">
                     {document.extractedMemoryCount} memories

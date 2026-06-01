@@ -8,7 +8,7 @@ import {
   CalendarClock,
   FolderPlus,
   Layers3,
-  PlusCircle
+  PlusCircle,
 } from "lucide-react";
 import type { ProjectDto } from "@/lib/projects/types";
 
@@ -30,7 +30,7 @@ type ApiCreateProjectResponse =
 const dateFormatter = new Intl.DateTimeFormat("en", {
   month: "short",
   day: "numeric",
-  year: "numeric"
+  year: "numeric",
 });
 
 export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
@@ -50,18 +50,20 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name,
-          description: description.length > 0 ? description : undefined
-        })
+          description: description.length > 0 ? description : undefined,
+        }),
       });
       const payload = (await response.json()) as ApiCreateProjectResponse;
 
       if (!response.ok || "error" in payload) {
         setError(
-          "error" in payload ? payload.error.message : "Unable to create project."
+          "error" in payload
+            ? payload.error.message
+            : "Unable to create project.",
         );
         return;
       }
@@ -83,10 +85,10 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">
             <h1 className="text-4xl font-semibold tracking-normal text-ink">
-              Projects
+              项目列表
             </h1>
             <p className="max-w-2xl text-base leading-7 text-slate-600">
-              Create a workspace for each project memory.
+              为每个项目记忆创建一个工作区.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
@@ -134,10 +136,10 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
               <FolderPlus aria-hidden="true" size={24} strokeWidth={2} />
             </div>
             <h2 className="text-xl font-semibold tracking-normal text-ink">
-              No projects yet
+              项目列表为空.
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-              Create the first workspace to start the project memory flow.
+              创建第一个工作区，以开启项目记忆流程.
             </p>
           </div>
         )}
@@ -151,21 +153,24 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
             </span>
             <div>
               <h2 className="text-lg font-semibold tracking-normal text-ink">
-                New project
+                新项目
               </h2>
-              <p className="text-sm text-slate-500">Project workspace</p>
+              <p className="text-sm text-slate-500">项目工作空间</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="project-name" className="text-sm font-medium text-ink">
-              Name
+            <label
+              htmlFor="project-name"
+              className="text-sm font-medium text-ink"
+            >
+              标题
             </label>
             <input
               id="project-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Atlas Billing Revamp"
+              placeholder="Atlas 账单改进"
               className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               maxLength={120}
               disabled={isSubmitting}
@@ -177,13 +182,13 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
               htmlFor="project-description"
               className="text-sm font-medium text-ink"
             >
-              Description
+              简介
             </label>
             <textarea
               id="project-description"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Billing, pricing, and checkout redesign."
+              placeholder="账单、定价及结账流程的重新设计."
               className="min-h-28 w-full resize-y rounded-lg border border-line bg-white px-3 py-3 text-sm leading-6 text-ink outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               maxLength={1000}
               disabled={isSubmitting}
@@ -202,7 +207,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             <PlusCircle aria-hidden="true" size={18} />
-            {isSubmitting ? "Creating" : "Create project"}
+            {isSubmitting ? "创建中..." : "创建项目"}
           </button>
         </form>
       </aside>

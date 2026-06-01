@@ -8,30 +8,131 @@ datasource db {
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  documents   Document[]
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  documents     Document[]
+  chunks        Chunk[]
+  decisions     Decision[]
+  actionItems   ActionItem[]
+  openQuestions OpenQuestion[]
+  risks         Risk[]
 
   @@map("projects")
 }
 
 model Document {
-  id           String         @id @default(cuid())
-  projectId    String
-  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  fileName     String
-  mimeType     String
-  rawText      String
-  status       DocumentStatus @default(PROCESSING)
-  errorMessage String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  projectId     String
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileName      String
+  mimeType      String
+  rawText       String
+  status        DocumentStatus @default(PROCESSING)
+  errorMessage  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  chunks        Chunk[]
+  decisions     Decision[]
+  actionItems   ActionItem[]
+  openQuestions OpenQuestion[]
+  risks         Risk[]
 
   @@index([projectId, createdAt])
   @@map("documents")
+}
+
+model Chunk {
+  id         String                      @id @default(cuid())
+  projectId  String
+  project    Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Document                    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  chunkIndex Int
+  tokenCount Int
+  embedding  Unsupported("vector(1536)")
+  createdAt  DateTime                    @default(now())
+
+  @@unique([documentId, chunkIndex])
+  @@index([projectId])
+  @@index([documentId])
+  @@map("chunks")
+}
+
+model Decision {
+  id           String    @id @default(cuid())
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  title        String
+  summary      String
+  rationale    String?
+  date         DateTime?
+  participants String[]  @default([])
+  sourceQuote  String
+  createdAt    DateTime  @default(now())
+
+  @@index([projectId])
+  @@index([documentId])
+  @@map("decisions")
+}
+
+model ActionItem {
+  id          String           @id @default(cuid())
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId  String
+  document    Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  owner       String?
+  dueDate     DateTime?
+  status      ActionItemStatus @default(OPEN)
+  sourceQuote String
+  createdAt   DateTime         @default(now())
+
+  @@index([projectId])
+  @@index([documentId])
+  @@map("action_items")
+}
+
+model OpenQuestion {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  question    String
+  context     String
+  owner       String?
+  sourceQuote String
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([documentId])
+  @@map("open_questions")
+}
+
+model Risk {
+  id          String       @id @default(cuid())
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId  String
+  document    Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  severity    RiskSeverity @default(MEDIUM)
+  mitigation  String?
+  sourceQuote String
+  createdAt   DateTime     @default(now())
+
+  @@index([projectId])
+  @@index([documentId])
+  @@map("risks")
 }
 
 enum DocumentStatus {
@@ -40,4 +141,20 @@ enum DocumentStatus {
   FAILED     @map("failed")
 
   @@map("document_status")
+}
+
+enum ActionItemStatus {
+  OPEN        @map("open")
+  IN_PROGRESS @map("in_progress")
+  DONE        @map("done")
+
+  @@map("action_item_status")
+}
+
+enum RiskSeverity {
+  LOW    @map("low")
+  MEDIUM @map("medium")
+  HIGH   @map("high")
+
+  @@map("risk_severity")
 }

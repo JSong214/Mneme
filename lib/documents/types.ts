@@ -2,6 +2,18 @@ import type { Document, DocumentStatus } from "@prisma/client";
 
 export type DocumentStatusDto = "processing" | "ready" | "failed";
 
+type DocumentMemoryCounts = {
+  chunks: number;
+  decisions: number;
+  actionItems: number;
+  openQuestions: number;
+  risks: number;
+};
+
+export type DocumentWithIngestionCounts = Document & {
+  _count?: DocumentMemoryCounts;
+};
+
 export type DocumentDto = {
   id: string;
   projectId: string;
@@ -9,6 +21,7 @@ export type DocumentDto = {
   mimeType: string;
   status: DocumentStatusDto;
   errorMessage: string | null;
+  chunkCount: number;
   extractedMemoryCount: number;
   createdAt: string;
   updatedAt: string;
@@ -32,7 +45,15 @@ const statusMap: Record<DocumentStatus, DocumentStatusDto> = {
   FAILED: "failed"
 };
 
-export function toDocumentDto(document: Document): DocumentDto {
+export function toDocumentDto(document: DocumentWithIngestionCounts): DocumentDto {
+  const chunkCount = document._count?.chunks ?? 0;
+  const extractedMemoryCount = document._count
+    ? document._count.decisions +
+      document._count.actionItems +
+      document._count.openQuestions +
+      document._count.risks
+    : 0;
+
   return {
     id: document.id,
     projectId: document.projectId,
@@ -40,7 +61,8 @@ export function toDocumentDto(document: Document): DocumentDto {
     mimeType: document.mimeType,
     status: statusMap[document.status],
     errorMessage: document.errorMessage,
-    extractedMemoryCount: 0,
+    chunkCount,
+    extractedMemoryCount,
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString()
   };

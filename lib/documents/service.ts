@@ -11,6 +11,7 @@ import {
   toDocumentDto,
   type ProjectDocumentsDto
 } from "@/lib/documents/types";
+import { processDocumentIngestion } from "@/lib/ingestion/service";
 
 type PreparedDocumentFile = {
   fileName: string;
@@ -56,7 +57,7 @@ export async function uploadProjectDocuments(
 
   const preparedFiles = await prepareDocumentFiles(files);
 
-  await prisma.$transaction(
+  const documents = await prisma.$transaction(
     preparedFiles.map((file) =>
       prisma.document.create({
         data: {
@@ -64,11 +65,15 @@ export async function uploadProjectDocuments(
           fileName: file.fileName,
           mimeType: file.mimeType,
           rawText: file.rawText,
-          status: "READY"
+          status: "PROCESSING"
         }
       })
     )
   );
+
+  for (const document of documents) {
+    await processDocumentIngestion(document.id);
+  }
 
   return getProjectDocuments(projectId);
 }
@@ -79,6 +84,17 @@ async function getProjectDocuments(
   const documents = await prisma.document.findMany({
     where: {
       projectId
+    },
+    include: {
+      _count: {
+        select: {
+          chunks: true,
+          decisions: true,
+          actionItems: true,
+          openQuestions: true,
+          risks: true
+        }
+      }
     },
     orderBy: {
       createdAt: "desc"
