@@ -7,6 +7,7 @@ import {
   extractStructuredMemories,
   type StructuredMemoryExtraction
 } from "@/lib/ingestion/memory-extraction";
+import { toPgVector } from "@/lib/db/pgvector";
 
 type IngestionResult = {
   status: "ready" | "failed";
@@ -219,10 +220,6 @@ async function markDocumentFailed(documentId: string, errorMessage: string) {
       errorMessage
     }
   });
-}
-
-function toPgVector(embedding: number[]): string {
-  return `[${embedding.map((value) => value.toFixed(8)).join(",")}]`;
 }
 
 function emptyToNull(value: string): string | null {

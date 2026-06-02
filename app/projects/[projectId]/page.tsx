@@ -37,7 +37,8 @@ const workspaceItems = [
     title: "问答",
     description: "基于来源证据提问项目问题。",
     icon: MessageSquareText,
-    status: "计划中"
+    status: "可用",
+    href: "ask"
   },
   {
     title: "记忆",
