@@ -20,6 +20,8 @@ model Project {
   openQuestions OpenQuestion[]
   risks         Risk[]
   askRuns       AskRun[]
+  evalCases     EvalCase[]
+  evalRuns      EvalRun[]
 
   @@map("projects")
 }
@@ -148,6 +150,39 @@ model AskRun {
 
   @@index([projectId, createdAt])
   @@map("ask_runs")
+}
+
+model EvalCase {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  question        String
+  expectedSources String[]  @default([])
+  expectedFacts   String[]  @default([])
+  createdAt       DateTime  @default(now())
+  runs            EvalRun[]
+
+  @@index([projectId, createdAt])
+  @@map("eval_cases")
+}
+
+model EvalRun {
+  id                String   @id @default(cuid())
+  projectId         String
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evalCaseId        String
+  evalCase          EvalCase @relation(fields: [evalCaseId], references: [id], onDelete: Cascade)
+  answerJson        Json
+  retrievedSources  Json
+  sourceMatch       Boolean
+  groundednessScore Int
+  latencyMs         Int
+  tokenUsage        Json?
+  createdAt         DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([evalCaseId, createdAt])
+  @@map("eval_runs")
 }
 
 enum DocumentStatus {

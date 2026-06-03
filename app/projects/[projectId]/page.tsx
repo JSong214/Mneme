@@ -8,6 +8,7 @@ import {
   Radar,
   TableProperties
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { getProject } from "@/lib/projects/service";
 
@@ -25,7 +26,15 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric"
 });
 
-const workspaceItems = [
+type WorkspaceItem = {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  status: "可用" | "计划中";
+  href?: string;
+};
+
+const workspaceItems: WorkspaceItem[] = [
   {
     title: "文档",
     description: "上传源文件并跟踪摄取状态。",
@@ -51,7 +60,8 @@ const workspaceItems = [
     title: "评估",
     description: "检查证据召回和回答依据。",
     icon: Radar,
-    status: "计划中"
+    status: "可用",
+    href: "eval"
   }
 ];
 

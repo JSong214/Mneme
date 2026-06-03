@@ -16,9 +16,15 @@ type OpenAIEmbeddingsResponse = {
 type OpenAIResponsesPayload = {
   output_text?: unknown;
   output?: unknown;
+  usage?: unknown;
   error?: {
     message?: string;
   };
+};
+
+export type OpenAIStructuredResponse = {
+  text: string;
+  tokenUsage: unknown | null;
 };
 
 export class OpenAIServiceError extends Error {
@@ -63,6 +69,16 @@ export async function createStructuredResponseText(
   schema: Record<string, unknown>,
   name: string
 ): Promise<string> {
+  const response = await createStructuredResponse(input, schema, name);
+
+  return response.text;
+}
+
+export async function createStructuredResponse(
+  input: Array<{ role: "system" | "user"; content: string }>,
+  schema: Record<string, unknown>,
+  name: string
+): Promise<OpenAIStructuredResponse> {
   const payload = (await requestOpenAI("/responses", {
     model: OPENAI_EXTRACTION_MODEL,
     input,
@@ -81,7 +97,10 @@ export async function createStructuredResponseText(
     throw new OpenAIServiceError(payload.error.message);
   }
 
-  return extractResponseText(payload);
+  return {
+    text: extractResponseText(payload),
+    tokenUsage: payload.usage ?? null
+  };
 }
 
 async function requestOpenAI(

@@ -1,0 +1,3 @@
+export const MAX_EVAL_CASE_QUESTION_LENGTH = 1_000;
+export const MAX_EVAL_LIST_ITEMS = 20;
+export const MAX_EVAL_LIST_ITEM_LENGTH = 200;

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createStructuredResponseText } from "@/lib/ai/openai";
+import { createStructuredResponse } from "@/lib/ai/openai";
 import {
   askAnswerJsonSchema,
   askAnswerSchema,
@@ -20,6 +20,11 @@ import {
 
 const ASK_ANSWER_SYSTEM_PROMPT =
   "你是 Project Memory Assistant 的 Ask RAG 回答器。你只能根据提供的检索片段和结构化项目记忆回答，不要猜测或补充没有证据的信息。除 source quote、文件名、API 名称、技术术语、产品名和人名外，面向用户的内容必须使用简体中文。quote 必须从上下文原文中摘取，不能翻译或改写。如果证据不足，answer 要明确说明不足，confidence 不能是 high，并在 missingInfo 中列出缺失信息。只返回符合 JSON schema 的内容，不要输出额外说明。";
+
+export type GeneratedAskAnswer = {
+  answer: AskAnswer;
+  tokenUsage: unknown | null;
+};
 
 export class AskUnavailableError extends Error {
   constructor(message: string) {
@@ -96,17 +101,17 @@ export async function askProjectQuestion(
 
   const startedAt = Date.now();
   const context = await retrieveProjectContext(projectId, question);
-  const answer = await generateProjectAnswer(question, context);
+  const { answer } = await generateProjectAnswerFromContext(question, context);
   const latencyMs = Date.now() - startedAt;
 
   return saveAskRun(projectId, question, answer, latencyMs);
 }
 
-async function generateProjectAnswer(
+export async function generateProjectAnswerFromContext(
   question: string,
   context: RetrievedProjectContext
-): Promise<AskAnswer> {
-  const responseText = await createStructuredResponseText(
+): Promise<GeneratedAskAnswer> {
+  const response = await createStructuredResponse(
     [
       {
         role: "system",
@@ -125,9 +130,12 @@ async function generateProjectAnswer(
     askAnswerJsonSchema,
     "project_memory_answer"
   );
-  const parsedJson = JSON.parse(responseText) as unknown;
+  const parsedJson = JSON.parse(response.text) as unknown;
 
-  return askAnswerSchema.parse(parsedJson);
+  return {
+    answer: askAnswerSchema.parse(parsedJson),
+    tokenUsage: response.tokenUsage
+  };
 }
 
 async function saveAskRun(

@@ -12,7 +12,7 @@ import {
   Quote,
   Send,
   Sparkles,
-  TableProperties
+  TableProperties,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { MAX_ASK_QUESTION_LENGTH } from "@/lib/ask/constants";
@@ -41,30 +41,30 @@ const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   day: "numeric",
   year: "numeric",
   hour: "numeric",
-  minute: "2-digit"
+  minute: "2-digit",
 });
 
 const confidenceStyles: Record<AskConfidence, string> = {
   high: "border-emerald-200 bg-emerald-50 text-emerald-700",
   medium: "border-amber-200 bg-amber-50 text-amber-700",
-  low: "border-red-200 bg-red-50 text-red-700"
+  low: "border-red-200 bg-red-50 text-red-700",
 };
 
 const confidenceLabels: Record<AskConfidence, string> = {
   high: "高",
   medium: "中",
-  low: "低"
+  low: "低",
 };
 
 export function AskClient({
   projectId,
   projectName,
-  initialRuns
+  initialRuns,
 }: AskClientProps) {
   const router = useRouter();
   const [runs, setRuns] = useState(initialRuns);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(
-    initialRuns[0]?.id ?? null
+    initialRuns[0]?.id ?? null,
   );
   const [question, setQuestion] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -94,11 +94,11 @@ export function AskClient({
       const response = await fetch(`/api/projects/${projectId}/ask`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          question: trimmedQuestion
-        })
+          question: trimmedQuestion,
+        }),
       });
       const payload = (await response.json()) as ApiAskResponse;
 
@@ -106,15 +106,17 @@ export function AskClient({
         setError(
           "error" in payload
             ? toUserFacingError(payload.error.code, payload.error.message)
-            : "无法回答该问题。"
+            : "无法回答该问题。",
         );
         return;
       }
 
-      setRuns((currentRuns) => [
-        payload.run,
-        ...currentRuns.filter((run) => run.id !== payload.run.id)
-      ].slice(0, 10));
+      setRuns((currentRuns) =>
+        [
+          payload.run,
+          ...currentRuns.filter((run) => run.id !== payload.run.id),
+        ].slice(0, 10),
+      );
       setSelectedRunId(payload.run.id);
       setQuestion("");
       router.refresh();
@@ -153,7 +155,10 @@ export function AskClient({
           className="rounded-lg border border-line bg-white p-5 shadow-soft"
         >
           <div className="space-y-3">
-            <label htmlFor="ask-question" className="text-sm font-medium text-ink">
+            <label
+              htmlFor="ask-question"
+              className="text-sm font-medium text-ink"
+            >
               项目问题
             </label>
             <textarea
@@ -164,7 +169,7 @@ export function AskClient({
               disabled={isSubmitting}
               rows={5}
               className="block min-h-32 w-full resize-y rounded-lg border border-line bg-white px-3 py-3 text-sm leading-6 text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-50"
-              placeholder="例如：为什么团队选择 tiered pricing，而不是 usage-based pricing？"
+              placeholder="例如：为什么团队选择分层定价，而不是基于使用量进行定价？"
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-500">
@@ -196,11 +201,7 @@ export function AskClient({
           ) : null}
         </form>
 
-        {selectedRun ? (
-          <AnswerPanel run={selectedRun} />
-        ) : (
-          <EmptyAskState />
-        )}
+        {selectedRun ? <AnswerPanel run={selectedRun} /> : <EmptyAskState />}
       </section>
 
       <aside className="h-fit min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
@@ -260,29 +261,23 @@ export function AskClient({
 function AnswerPanel({ run }: { run: AskRunDto }) {
   const answer = run.answer;
   const hasRelated = Object.values(answer.related).some(
-    (items) => items.length > 0
+    (items) => items.length > 0,
   );
 
   return (
     <article className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-3">
-          <div className="flex min-w-0 items-start gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-ink text-white">
               <Sparkles aria-hidden="true" size={20} />
             </span>
             <div className="min-w-0 space-y-2">
-              <p className="text-sm font-semibold text-teal-700">
+              <p className="text-xl font-semibold text-teal-700 ">
                 {run.question}
               </p>
-              <h2 className="text-2xl font-semibold tracking-normal text-ink">
-                回答
-              </h2>
             </div>
           </div>
-          <p className="whitespace-pre-wrap text-base leading-8 text-slate-700">
-            {answer.answer}
-          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 text-sm lg:max-w-64 lg:flex-col lg:items-end">
@@ -293,8 +288,20 @@ function AnswerPanel({ run }: { run: AskRunDto }) {
             置信度 {confidenceLabels[answer.confidence]}
           </span>
           <MetaPill icon={Clock3} label={`${run.latencyMs} ms`} />
-          <MetaPill icon={MessageSquareText} label={formatDateTime(run.createdAt)} />
+          <MetaPill
+            icon={MessageSquareText}
+            label={formatDateTime(run.createdAt)}
+          />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-normal text-ink">
+          回答
+        </h2>
+        <p className="whitespace-pre-wrap text-base leading-8 text-slate-700">
+          {answer.answer}
+        </p>
       </div>
 
       {answer.evidence.length > 0 ? (
@@ -346,7 +353,10 @@ function AnswerPanel({ run }: { run: AskRunDto }) {
           <div className="grid gap-3 md:grid-cols-2">
             <RelatedGroup label="决策" items={answer.related.decisions} />
             <RelatedGroup label="行动项" items={answer.related.actionItems} />
-            <RelatedGroup label="待解问题" items={answer.related.openQuestions} />
+            <RelatedGroup
+              label="待解问题"
+              items={answer.related.openQuestions}
+            />
             <RelatedGroup label="风险" items={answer.related.risks} />
           </div>
         </section>
@@ -355,13 +365,7 @@ function AnswerPanel({ run }: { run: AskRunDto }) {
   );
 }
 
-function RelatedGroup({
-  label,
-  items
-}: {
-  label: string;
-  items: string[];
-}) {
+function RelatedGroup({ label, items }: { label: string; items: string[] }) {
   return (
     <div className="rounded-lg border border-line bg-slate-50 px-3 py-3">
       <p className="text-sm font-semibold text-ink">{label}</p>
@@ -382,7 +386,7 @@ function RelatedGroup({
 
 function SectionTitle({
   icon: Icon,
-  label
+  label,
 }: {
   icon: LucideIcon;
   label: string;
@@ -395,13 +399,7 @@ function SectionTitle({
   );
 }
 
-function MetaPill({
-  icon: Icon,
-  label
-}: {
-  icon: LucideIcon;
-  label: string;
-}) {
+function MetaPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
     <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-medium text-slate-600">
       <Icon aria-hidden="true" size={15} className="shrink-0" />
