@@ -17,7 +17,10 @@ export const askAnswerSchema = z.object({
       file: z.string().min(1),
       date: z.string(),
       quote: z.string().min(1),
-      relevance: z.string().min(1)
+      relevance: z.string().min(1),
+      documentId: z.string().min(1).optional(),
+      chunkId: z.string().min(1).optional(),
+      chunkIndex: z.number().int().nonnegative().optional()
     })
   ),
   missingInfo: z.array(z.string()),

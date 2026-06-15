@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   FileText,
   Files,
   LoaderCircle,
@@ -224,6 +226,13 @@ export function DocumentsClient({
                   <span className="font-semibold text-slate-700">
                     {document.extractedMemoryCount} 条记忆
                   </span>
+                  <Link
+                    href={`/projects/${projectId}/documents/${document.id}`}
+                    className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                  >
+                    <ExternalLink aria-hidden="true" size={15} />
+                    查看来源
+                  </Link>
                 </div>
               </article>
             ))}

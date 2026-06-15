@@ -131,9 +131,10 @@ export async function generateProjectAnswerFromContext(
     "project_memory_answer"
   );
   const parsedJson = JSON.parse(response.text) as unknown;
+  const answer = askAnswerSchema.parse(parsedJson);
 
   return {
-    answer: askAnswerSchema.parse(parsedJson),
+    answer: enrichAnswerEvidence(answer, context),
     tokenUsage: response.tokenUsage
   };
 }
@@ -186,6 +187,127 @@ function formatRetrievedContext(context: RetrievedProjectContext): string {
     "## Structured memories",
     formatStructuredMemories(context)
   ].join("\n\n");
+}
+
+// 将模型生成的 evidence 映射回本次检索命中的 chunk，便于前端直达来源片段。
+function enrichAnswerEvidence(
+  answer: AskAnswer,
+  context: RetrievedProjectContext
+): AskAnswer {
+  return {
+    ...answer,
+    evidence: answer.evidence.map((evidence) => {
+      const matchedChunk = findEvidenceChunk(evidence, context);
+
+      if (matchedChunk) {
+        return {
+          ...evidence,
+          documentId: matchedChunk.documentId,
+          chunkId: matchedChunk.id,
+          chunkIndex: matchedChunk.chunkIndex
+        };
+      }
+
+      const documentId = findEvidenceDocumentId(evidence.file, context);
+
+      return documentId
+        ? {
+            ...evidence,
+            documentId
+          }
+        : evidence;
+    })
+  };
+}
+
+function findEvidenceChunk(
+  evidence: AskAnswer["evidence"][number],
+  context: RetrievedProjectContext
+) {
+  const normalizedFile = normalizeEvidenceText(evidence.file);
+  const quoteSegments = buildQuoteSegments(evidence.quote);
+
+  if (quoteSegments.length === 0) {
+    return null;
+  }
+
+  const fileMatchedChunks = context.chunks.filter(
+    (chunk) => normalizeEvidenceText(chunk.fileName) === normalizedFile
+  );
+  const candidates =
+    fileMatchedChunks.length > 0 ? fileMatchedChunks : context.chunks;
+
+  return (
+    candidates.find((chunk) => {
+      const normalizedContent = normalizeEvidenceText(chunk.content);
+
+      return quoteSegments.some((segment) =>
+        normalizedContent.includes(segment)
+      );
+    }) ?? null
+  );
+}
+
+function findEvidenceDocumentId(
+  fileName: string,
+  context: RetrievedProjectContext
+) {
+  const normalizedFile = normalizeEvidenceText(fileName);
+  const chunk = context.chunks.find(
+    (candidate) => normalizeEvidenceText(candidate.fileName) === normalizedFile
+  );
+
+  if (chunk) {
+    return chunk.documentId;
+  }
+
+  const memories = [
+    ...context.memories.decisions,
+    ...context.memories.actionItems,
+    ...context.memories.openQuestions,
+    ...context.memories.risks
+  ];
+  const memory = memories.find(
+    (candidate) =>
+      normalizeEvidenceText(candidate.document.fileName) === normalizedFile
+  );
+
+  return memory?.documentId ?? null;
+}
+
+function buildQuoteSegments(quote: string): string[] {
+  const normalizedQuote = normalizeEvidenceText(quote);
+
+  if (normalizedQuote.length === 0) {
+    return [];
+  }
+
+  const segments = new Set<string>();
+
+  if (normalizedQuote.length <= 180) {
+    segments.add(normalizedQuote);
+  } else {
+    segments.add(normalizedQuote.slice(0, 180).trim());
+    segments.add(normalizedQuote.slice(-180).trim());
+  }
+
+  for (const segment of normalizedQuote.split(/[。！？；;.!?…]+/)) {
+    const normalizedSegment = segment.trim();
+
+    if (normalizedSegment.length >= 12) {
+      segments.add(normalizedSegment);
+    }
+  }
+
+  return [...segments].filter((segment) => segment.length > 0);
+}
+
+function normalizeEvidenceText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/["'“”‘’]/g, "")
+    .replace(/\s+/g, " ");
 }
 
 function formatRetrievedChunk(

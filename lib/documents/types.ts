@@ -1,4 +1,5 @@
-import type { Document, DocumentStatus } from "@prisma/client";
+import type { Chunk, Document, DocumentStatus } from "@prisma/client";
+import type { ProjectMemoryGroupsDto } from "@/lib/memories/types";
 
 export type DocumentStatusDto = "processing" | "ready" | "failed";
 
@@ -27,6 +28,21 @@ export type DocumentDto = {
   updatedAt: string;
 };
 
+export type DocumentDetailDto = DocumentDto & {
+  rawText: string;
+  rawTextCharacterCount: number;
+};
+
+export type DocumentChunkDto = {
+  id: string;
+  projectId: string;
+  documentId: string;
+  content: string;
+  chunkIndex: number;
+  tokenCount: number;
+  createdAt: string;
+};
+
 export type DocumentSummaryDto = {
   total: number;
   processing: number;
@@ -38,6 +54,17 @@ export type ProjectDocumentsDto = {
   documents: DocumentDto[];
   summary: DocumentSummaryDto;
 };
+
+export type ProjectDocumentDetailDto = {
+  document: DocumentDetailDto;
+  chunks: DocumentChunkDto[];
+  memories: ProjectMemoryGroupsDto;
+};
+
+type DocumentChunkRecord = Pick<
+  Chunk,
+  "id" | "projectId" | "documentId" | "content" | "chunkIndex" | "tokenCount" | "createdAt"
+>;
 
 const statusMap: Record<DocumentStatus, DocumentStatusDto> = {
   PROCESSING: "processing",
@@ -65,6 +92,28 @@ export function toDocumentDto(document: DocumentWithIngestionCounts): DocumentDt
     extractedMemoryCount,
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString()
+  };
+}
+
+export function toDocumentDetailDto(
+  document: DocumentWithIngestionCounts
+): DocumentDetailDto {
+  return {
+    ...toDocumentDto(document),
+    rawText: document.rawText,
+    rawTextCharacterCount: document.rawText.length
+  };
+}
+
+export function toDocumentChunkDto(chunk: DocumentChunkRecord): DocumentChunkDto {
+  return {
+    id: chunk.id,
+    projectId: chunk.projectId,
+    documentId: chunk.documentId,
+    content: chunk.content,
+    chunkIndex: chunk.chunkIndex,
+    tokenCount: chunk.tokenCount,
+    createdAt: chunk.createdAt.toISOString()
   };
 }
 

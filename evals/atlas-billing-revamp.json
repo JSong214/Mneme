@@ -1,0 +1,61 @@
+[
+  {
+    "question": "Why did the team choose tiered pricing instead of usage-based pricing?",
+    "expectedSources": [
+      "meeting-2026-04-10-pricing.md",
+      "decision-log.md"
+    ],
+    "expectedFacts": [
+      "Usage-based pricing made monthly bills harder for customers to forecast.",
+      "Tiered pricing simplified the pricing page and sales conversations."
+    ]
+  },
+  {
+    "question": "What open questions remain for checkout migration?",
+    "expectedSources": [
+      "meeting-2026-04-17-checkout.md",
+      "open-questions.md"
+    ],
+    "expectedFacts": [
+      "The tax provider decision is still open.",
+      "Coupon mapping for legacy discounts is unresolved.",
+      "The team still needs a policy for partial refunds during plan migration."
+    ]
+  },
+  {
+    "question": "Who owns the pricing page update and when is it due?",
+    "expectedSources": [
+      "meeting-2026-04-10-pricing.md",
+      "tasks.md"
+    ],
+    "expectedFacts": [
+      "Maya owns the pricing page update.",
+      "The pricing page copy is due by 2026-04-24."
+    ]
+  },
+  {
+    "question": "What decisions were made about failed payment retries?",
+    "expectedSources": [
+      "slack-export-billing-thread.md",
+      "decision-log.md"
+    ],
+    "expectedFacts": [
+      "Failed payments will retry on day 1, day 3, and day 7.",
+      "Customer emails will go out after the first and third failed attempts.",
+      "The billing owner will be notified after the final failure."
+    ]
+  },
+  {
+    "question": "What are the risks around legacy customer migration?",
+    "expectedSources": [
+      "project-brief.md",
+      "decision-log.md",
+      "support-readiness.md"
+    ],
+    "expectedFacts": [
+      "Existing annual customers should keep their legacy price until renewal.",
+      "Support confusion may increase if plan names differ across surfaces.",
+      "The migration preview should show old plan name, new tier name, and renewal price."
+    ]
+  }
+]

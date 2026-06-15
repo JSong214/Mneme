@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { AskClient } from "@/app/projects/[projectId]/ask/ask-client";
 import { listProjectAskRuns } from "@/lib/ask/service";
+import { listProjectDocuments } from "@/lib/documents/service";
 import { getProject } from "@/lib/projects/service";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +17,17 @@ type AskPageProps = {
 
 export default async function AskPage({ params }: AskPageProps) {
   const { projectId } = params;
-  const project = await getProject(projectId);
+  const [project, result, documentResult] = await Promise.all([
+    getProject(projectId),
+    listProjectAskRuns(projectId),
+    listProjectDocuments(projectId)
+  ]);
 
   if (!project) {
     notFound();
   }
 
-  const result = await listProjectAskRuns(projectId);
-
-  if (!result) {
+  if (!result || !documentResult) {
     notFound();
   }
 
@@ -43,6 +46,10 @@ export default async function AskPage({ params }: AskPageProps) {
           projectId={project.id}
           projectName={project.name}
           initialRuns={result.runs}
+          sourceDocuments={documentResult.documents.map((document) => ({
+            id: document.id,
+            fileName: document.fileName
+          }))}
         />
       </div>
     </PageShell>

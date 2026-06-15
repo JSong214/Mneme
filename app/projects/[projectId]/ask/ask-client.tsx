@@ -1,11 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Clock3,
+  ExternalLink,
   FileText,
+  Hash,
   HelpCircle,
   LoaderCircle,
   MessageSquareText,
@@ -18,12 +21,16 @@ import type { LucideIcon } from "lucide-react";
 import { MAX_ASK_QUESTION_LENGTH } from "@/lib/ask/constants";
 import type { AskConfidence } from "@/lib/ask/schemas";
 import type { AskRunDto } from "@/lib/ask/types";
+import type { DocumentDto } from "@/lib/documents/types";
 
 type AskClientProps = {
   projectId: string;
   projectName: string;
   initialRuns: AskRunDto[];
+  sourceDocuments: AskSourceDocument[];
 };
+
+type AskSourceDocument = Pick<DocumentDto, "id" | "fileName">;
 
 type ApiAskResponse =
   | {
@@ -60,6 +67,7 @@ export function AskClient({
   projectId,
   projectName,
   initialRuns,
+  sourceDocuments,
 }: AskClientProps) {
   const router = useRouter();
   const [runs, setRuns] = useState(initialRuns);
@@ -201,7 +209,15 @@ export function AskClient({
           ) : null}
         </form>
 
-        {selectedRun ? <AnswerPanel run={selectedRun} /> : <EmptyAskState />}
+        {selectedRun ? (
+          <AnswerPanel
+            projectId={projectId}
+            run={selectedRun}
+            sourceDocuments={sourceDocuments}
+          />
+        ) : (
+          <EmptyAskState />
+        )}
       </section>
 
       <aside className="h-fit min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
@@ -258,7 +274,15 @@ export function AskClient({
   );
 }
 
-function AnswerPanel({ run }: { run: AskRunDto }) {
+function AnswerPanel({
+  projectId,
+  run,
+  sourceDocuments,
+}: {
+  projectId: string;
+  run: AskRunDto;
+  sourceDocuments: AskSourceDocument[];
+}) {
   const answer = run.answer;
   const hasRelated = Object.values(answer.related).some(
     (items) => items.length > 0,
@@ -309,23 +333,15 @@ function AnswerPanel({ run }: { run: AskRunDto }) {
           <SectionTitle icon={Quote} label="证据" />
           <div className="grid gap-3">
             {answer.evidence.map((evidence, index) => (
-              <div
-                key={`${evidence.file}-${index}`}
-                className="rounded-lg border border-line bg-slate-50 px-4 py-3"
-              >
-                <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
-                  <MetaPill icon={FileText} label={evidence.file} />
-                  {evidence.date ? (
-                    <MetaPill icon={Clock3} label={evidence.date} />
-                  ) : null}
-                </div>
-                <p className="mt-3 break-words text-sm leading-6 text-slate-700">
-                  {evidence.quote}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  {evidence.relevance}
-                </p>
-              </div>
+              <EvidenceCard
+                key={`${evidence.file}-${evidence.chunkId ?? index}`}
+                evidence={evidence}
+                projectId={projectId}
+                sourceDocument={findEvidenceSourceDocument(
+                  evidence,
+                  sourceDocuments,
+                )}
+              />
             ))}
           </div>
         </section>
@@ -363,6 +379,79 @@ function AnswerPanel({ run }: { run: AskRunDto }) {
       ) : null}
     </article>
   );
+}
+
+function EvidenceCard({
+  evidence,
+  projectId,
+  sourceDocument,
+}: {
+  evidence: AskRunDto["answer"]["evidence"][number];
+  projectId: string;
+  sourceDocument?: AskSourceDocument;
+}) {
+  const sourceDocumentId = sourceDocument?.id ?? evidence.documentId;
+  const chunkIndex = evidence.chunkIndex;
+  const hasChunkTarget = typeof chunkIndex === "number";
+  const sourceHref = sourceDocumentId
+    ? `/projects/${projectId}/documents/${sourceDocumentId}${
+        hasChunkTarget ? `#chunk-${chunkIndex}` : ""
+      }`
+    : null;
+
+  return (
+    <div className="rounded-lg border border-line bg-slate-50 px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+          <MetaPill icon={FileText} label={evidence.file} />
+          {evidence.date ? <MetaPill icon={Clock3} label={evidence.date} /> : null}
+          {hasChunkTarget ? (
+            <MetaPill icon={Hash} label={`Chunk ${chunkIndex + 1}`} />
+          ) : null}
+        </div>
+        {sourceHref ? (
+          <Link
+            href={sourceHref}
+            className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-white px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+          >
+            <ExternalLink aria-hidden="true" size={14} />
+            {hasChunkTarget ? "查看片段" : "查看来源"}
+          </Link>
+        ) : null}
+      </div>
+      <p className="mt-3 break-words text-sm leading-6 text-slate-700">
+        {evidence.quote}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        {evidence.relevance}
+      </p>
+    </div>
+  );
+}
+
+function findEvidenceSourceDocument(
+  evidence: AskRunDto["answer"]["evidence"][number],
+  sourceDocuments: AskSourceDocument[],
+) {
+  if (evidence.documentId) {
+    const document = sourceDocuments.find(
+      (candidate) => candidate.id === evidence.documentId,
+    );
+
+    if (document) {
+      return document;
+    }
+  }
+
+  const normalizedFileName = normalizeFileName(evidence.file);
+
+  return sourceDocuments.find(
+    (document) => normalizeFileName(document.fileName) === normalizedFileName,
+  );
+}
+
+function normalizeFileName(value: string) {
+  return value.trim().toLowerCase();
 }
 
 function RelatedGroup({ label, items }: { label: string; items: string[] }) {

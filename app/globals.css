@@ -42,3 +42,9 @@ textarea {
   background: #b7f7e4;
   color: #0f172a;
 }
+
+.source-chunk-card:target {
+  border-color: #5eead4;
+  background: #f0fdfa;
+  box-shadow: 0 0 0 2px rgb(153 246 228 / 0.8);
+}

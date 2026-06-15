@@ -9,9 +9,18 @@ import {
 import {
   buildDocumentSummary,
   toDocumentDto,
+  toDocumentChunkDto,
+  toDocumentDetailDto,
+  type ProjectDocumentDetailDto,
   type ProjectDocumentsDto
 } from "@/lib/documents/types";
 import { processDocumentIngestion } from "@/lib/ingestion/service";
+import {
+  toActionItemMemoryDto,
+  toDecisionMemoryDto,
+  toOpenQuestionMemoryDto,
+  toRiskMemoryDto
+} from "@/lib/memories/types";
 
 type PreparedDocumentFile = {
   fileName: string;
@@ -78,6 +87,133 @@ export async function uploadProjectDocuments(
   return getProjectDocuments(projectId);
 }
 
+// 加载单个文档的完整来源视图：原文、chunks，以及从该文档提取出的结构化记忆。
+export async function getProjectDocumentDetail(
+  projectId: string,
+  documentId: string
+): Promise<ProjectDocumentDetailDto | null> {
+  const document = await prisma.document.findFirst({
+    where: {
+      id: documentId,
+      projectId
+    },
+    include: {
+      _count: {
+        select: {
+          chunks: true,
+          decisions: true,
+          actionItems: true,
+          openQuestions: true,
+          risks: true
+        }
+      }
+    }
+  });
+
+  if (!document) {
+    return null;
+  }
+
+  const [chunks, decisions, actionItems, openQuestions, risks] =
+    await prisma.$transaction([
+      prisma.chunk.findMany({
+        where: {
+          documentId,
+          projectId
+        },
+        select: {
+          id: true,
+          projectId: true,
+          documentId: true,
+          content: true,
+          chunkIndex: true,
+          tokenCount: true,
+          createdAt: true
+        },
+        orderBy: {
+          chunkIndex: "asc"
+        }
+      }),
+      prisma.decision.findMany({
+        where: {
+          documentId,
+          projectId
+        },
+        include: {
+          document: {
+            select: memoryDocumentSelect
+          }
+        },
+        orderBy: [
+          {
+            date: "desc"
+          },
+          {
+            createdAt: "desc"
+          }
+        ]
+      }),
+      prisma.actionItem.findMany({
+        where: {
+          documentId,
+          projectId
+        },
+        include: {
+          document: {
+            select: memoryDocumentSelect
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
+      }),
+      prisma.openQuestion.findMany({
+        where: {
+          documentId,
+          projectId
+        },
+        include: {
+          document: {
+            select: memoryDocumentSelect
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
+      }),
+      prisma.risk.findMany({
+        where: {
+          documentId,
+          projectId
+        },
+        include: {
+          document: {
+            select: memoryDocumentSelect
+          }
+        },
+        orderBy: [
+          {
+            severity: "desc"
+          },
+          {
+            createdAt: "desc"
+          }
+        ]
+      })
+    ]);
+
+  return {
+    document: toDocumentDetailDto(document),
+    chunks: chunks.map(toDocumentChunkDto),
+    memories: {
+      decisions: decisions.map(toDecisionMemoryDto),
+      actionItems: actionItems.map(toActionItemMemoryDto),
+      openQuestions: openQuestions.map(toOpenQuestionMemoryDto),
+      risks: risks.map(toRiskMemoryDto)
+    }
+  };
+}
+
 async function getProjectDocuments(
   projectId: string
 ): Promise<ProjectDocumentsDto> {
@@ -107,6 +243,11 @@ async function getProjectDocuments(
     summary: buildDocumentSummary(documentDtos)
   };
 }
+
+const memoryDocumentSelect = {
+  id: true,
+  fileName: true
+} as const;
 
 async function prepareDocumentFiles(
   files: File[]

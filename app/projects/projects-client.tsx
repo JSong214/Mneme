@@ -8,7 +8,9 @@ import {
   CalendarClock,
   FolderPlus,
   Layers3,
+  LoaderCircle,
   PlusCircle,
+  Sparkles,
 } from "lucide-react";
 import type { ProjectDto } from "@/lib/projects/types";
 
@@ -19,6 +21,26 @@ type ProjectsClientProps = {
 type ApiCreateProjectResponse =
   | {
       project: ProjectDto;
+    }
+  | {
+      error: {
+        code: string;
+        message: string;
+      };
+    };
+
+type ApiAtlasDemoImportResponse =
+  | {
+      result: {
+        project: ProjectDto;
+        documentsCreated: number;
+        documentsSkipped: number;
+        documentsReprocessed: number;
+        documentsReady: number;
+        documentsFailed: number;
+        evalCasesCreated: number;
+        evalCasesSkipped: number;
+      };
     }
   | {
       error: {
@@ -40,6 +62,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
   const [projects, setProjects] = useState(initialProjects);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImportingDemo, setIsImportingDemo] = useState(false);
 
   async function handleCreateProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,6 +99,40 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
       setError("无法创建项目。");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleImportAtlasDemo() {
+    setError(null);
+    setIsImportingDemo(true);
+
+    try {
+      const response = await fetch("/api/demo/atlas-billing-revamp", {
+        method: "POST",
+      });
+      const payload = (await response.json()) as ApiAtlasDemoImportResponse;
+
+      if (!response.ok || "error" in payload) {
+        setError(
+          "error" in payload
+            ? toDemoImportError(payload.error.code, payload.error.message)
+            : "无法导入 Atlas demo。",
+        );
+        return;
+      }
+
+      setProjects((currentProjects) => [
+        payload.result.project,
+        ...currentProjects.filter(
+          (project) => project.id !== payload.result.project.id,
+        ),
+      ]);
+      router.refresh();
+      router.push(`/projects/${payload.result.project.id}`);
+    } catch {
+      setError("无法导入 Atlas demo。");
+    } finally {
+      setIsImportingDemo(false);
     }
   }
 
@@ -210,7 +267,47 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
             {isSubmitting ? "创建中..." : "创建项目"}
           </button>
         </form>
+
+        <div className="mt-6 border-t border-line pt-5">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+              <Sparkles aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold tracking-normal text-ink">
+                Atlas Demo
+              </h2>
+              <p className="text-sm text-slate-500">示例项目与 eval cases</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleImportAtlasDemo}
+            disabled={isImportingDemo}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-4 text-sm font-semibold text-teal-700 shadow-soft transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            {isImportingDemo ? (
+              <LoaderCircle
+                aria-hidden="true"
+                size={18}
+                className="animate-spin"
+              />
+            ) : (
+              <Sparkles aria-hidden="true" size={18} />
+            )}
+            {isImportingDemo ? "导入中..." : "导入 Atlas Demo"}
+          </button>
+        </div>
       </aside>
     </div>
   );
+}
+
+function toDemoImportError(code: string, fallbackMessage: string) {
+  if (code === "DEMO_IMPORT_UNAVAILABLE") {
+    return "请先配置 OPENAI_API_KEY，并重新启动 dev server 后再导入 Atlas Demo。";
+  }
+
+  return fallbackMessage || "无法导入 Atlas demo。";
 }
