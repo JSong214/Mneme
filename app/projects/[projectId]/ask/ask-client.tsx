@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  CheckCircle2,
   Clock3,
   ExternalLink,
   FileText,
@@ -51,10 +50,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   minute: "2-digit",
 });
 
+// 置信度精细小边框样式，去除带彩色背景
 const confidenceStyles: Record<AskConfidence, string> = {
-  high: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  medium: "border-amber-200 bg-amber-50 text-amber-700",
-  low: "border-red-200 bg-red-50 text-red-700",
+  high: "border-black/[0.06] bg-slate-50 text-slate-700",
+  medium: "border-black/[0.06] bg-slate-50 text-slate-700",
+  low: "border-black/[0.06] bg-slate-50 text-red-600",
 };
 
 const confidenceLabels: Record<AskConfidence, string> = {
@@ -63,6 +63,10 @@ const confidenceLabels: Record<AskConfidence, string> = {
   low: "低",
 };
 
+/**
+ * 问答模块客户端组件
+ * 支持向项目记忆发起问题、查看生成的结构化回答、检索证据来源、以及浏览最近问答记录。
+ */
 export function AskClient({
   projectId,
   projectName,
@@ -136,36 +140,38 @@ export function AskClient({
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* 主问答控制与回答结果展示区 */}
       <section className="min-w-0 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-3">
-            <p className="text-sm font-semibold text-teal-700">{projectName}</p>
-            <h1 className="text-4xl font-semibold tracking-normal text-ink">
+          <div className="min-w-0 space-y-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{projectName}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">
               问答
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-slate-600">
+            <p className="max-w-2xl text-sm text-slate-500">
               基于文档片段和结构化项目记忆回答问题。
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
+          <div className="flex items-center gap-2 rounded-lg border border-black/[0.06] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
             <MessageSquareText
               aria-hidden="true"
-              size={18}
-              className="text-teal-600"
+              size={14}
+              className="text-slate-400"
             />
             {runs.length} 次问答
           </div>
         </div>
 
+        {/* 提问输入框 */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-lg border border-line bg-white p-5 shadow-soft"
+          className="rounded-xl border border-black/[0.06] bg-white p-6 shadow-card"
         >
           <div className="space-y-3">
             <label
               htmlFor="ask-question"
-              className="text-sm font-medium text-ink"
+              className="text-xs font-semibold text-slate-600"
             >
               项目问题
             </label>
@@ -175,41 +181,54 @@ export function AskClient({
               maxLength={MAX_ASK_QUESTION_LENGTH}
               onChange={(event) => setQuestion(event.currentTarget.value)}
               disabled={isSubmitting}
-              rows={5}
-              className="block min-h-32 w-full resize-y rounded-lg border border-line bg-white px-3 py-3 text-sm leading-6 text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-50"
+              rows={4}
+              className="block min-h-24 w-full resize-none rounded-lg border border-black/[0.08] bg-white px-3 py-2.5 text-xs leading-5 text-ink outline-none transition-all duration-300 focus:border-black/30 focus:ring-2 focus:ring-black/[0.03] disabled:cursor-not-allowed disabled:bg-slate-50"
               placeholder="例如：为什么团队选择分层定价，而不是基于使用量进行定价？"
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-slate-500">
+              <p className="text-[10px] font-medium text-slate-400">
                 {question.length}/{MAX_ASK_QUESTION_LENGTH}
               </p>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 {isSubmitting ? (
                   <LoaderCircle
                     aria-hidden="true"
-                    size={18}
+                    size={14}
                     className="animate-spin"
                   />
                 ) : (
-                  <Send aria-hidden="true" size={18} />
+                  <Send aria-hidden="true" size={14} />
                 )}
-                {isSubmitting ? "生成中..." : "提问"}
+                {isSubmitting ? "正在生成..." : "发起提问"}
               </button>
             </div>
           </div>
 
           {error ? (
-            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+            <p className="mt-4 rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs font-medium text-red-600">
               {error}
             </p>
           ) : null}
         </form>
 
-        {selectedRun ? (
+        {/* 回答生成态与结果面板 */}
+        {isSubmitting ? (
+          <div className="rounded-xl border border-black/[0.06] bg-white p-6 shadow-card animate-pulse space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="size-8 rounded-lg bg-slate-100 animate-status-pulse shrink-0" />
+              <div className="h-4 w-1/3 bg-slate-100 rounded-md" />
+            </div>
+            <div className="space-y-2 pt-2">
+              <div className="h-3 w-full bg-slate-100 rounded-md" />
+              <div className="h-3 w-5/6 bg-slate-100 rounded-md" />
+              <div className="h-3 w-2/3 bg-slate-100 rounded-md" />
+            </div>
+          </div>
+        ) : selectedRun ? (
           <AnswerPanel
             projectId={projectId}
             run={selectedRun}
@@ -220,21 +239,22 @@ export function AskClient({
         )}
       </section>
 
-      <aside className="h-fit min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
+      {/* 右侧最近问答历史记录 */}
+      <aside className="h-fit min-w-0 rounded-xl border border-black/[0.06] bg-white p-6 shadow-card space-y-5">
         <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-            <Clock3 aria-hidden="true" size={20} />
+          <span className="flex size-9 items-center justify-center rounded-lg bg-slate-50 border border-black/[0.06] text-slate-500">
+            <Clock3 aria-hidden="true" size={18} />
           </span>
           <div>
-            <h2 className="text-lg font-semibold tracking-normal text-ink">
+            <h2 className="text-sm font-semibold tracking-tight text-ink">
               最近问答
             </h2>
-            <p className="text-sm text-slate-500">最多显示 10 条记录</p>
+            <p className="text-xs text-slate-400">最多显示 10 条历史记录</p>
           </div>
         </div>
 
         {runs.length > 0 ? (
-          <div className="mt-5 grid gap-2">
+          <div className="grid gap-2">
             {runs.map((run) => {
               const isSelected = run.id === selectedRun?.id;
 
@@ -243,18 +263,18 @@ export function AskClient({
                   key={run.id}
                   type="button"
                   onClick={() => setSelectedRunId(run.id)}
-                  className={`min-w-0 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  className={`min-w-0 rounded-xl border p-3 text-left transition-all duration-300 ease-smooth focus:outline-none focus:ring-1 focus:ring-black/20 ${
                     isSelected
-                      ? "border-teal-300 bg-teal-50"
-                      : "border-line bg-white hover:bg-slate-50"
+                      ? "border-black/20 bg-slate-50"
+                      : "border-black/[0.06] bg-white hover:bg-slate-50/70"
                   }`}
                 >
-                  <span className="line-clamp-2 text-sm font-semibold leading-6 text-ink">
+                  <span className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
                     {run.question}
                   </span>
-                  <span className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
                     <span
-                      className={`rounded-lg border px-2 py-1 font-semibold ${confidenceStyles[run.answer.confidence]}`}
+                      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-bold ${confidenceStyles[run.answer.confidence]}`}
                     >
                       置信度 {confidenceLabels[run.answer.confidence]}
                     </span>
@@ -265,8 +285,8 @@ export function AskClient({
             })}
           </div>
         ) : (
-          <p className="mt-5 rounded-lg border border-dashed border-line bg-slate-50 px-3 py-6 text-center text-sm leading-6 text-slate-600">
-            暂无问答记录。
+          <p className="rounded-xl border border-dashed border-black/[0.08] bg-slate-50/50 px-3 py-6 text-center text-xs leading-5 text-slate-400">
+            暂无历史问答。
           </p>
         )}
       </aside>
@@ -289,26 +309,28 @@ function AnswerPanel({
   );
 
   return (
-    <article className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <article className="min-w-0 rounded-xl border border-black/[0.06] bg-white p-6 shadow-card space-y-6 animate-fade-in-up">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between border-b border-black/[0.04] pb-5">
         <div className="min-w-0 space-y-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-ink text-white">
-              <Sparkles aria-hidden="true" size={20} />
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-ink text-white">
+              <Sparkles aria-hidden="true" size={16} />
             </span>
-            <div className="min-w-0 space-y-2">
-              <p className="text-xl font-semibold text-teal-700 ">
+            <div className="min-w-0">
+              <p className="text-base font-semibold tracking-tight text-ink leading-7">
                 {run.question}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-sm lg:max-w-64 lg:flex-col lg:items-end">
+        <div className="flex flex-wrap gap-2 text-xs lg:max-w-64 lg:flex-col lg:items-end font-semibold">
           <span
-            className={`inline-flex items-center gap-2 rounded-lg border px-2 py-1 font-semibold ${confidenceStyles[answer.confidence]}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 font-bold ${confidenceStyles[answer.confidence]}`}
           >
-            <CheckCircle2 aria-hidden="true" size={15} />
+            {answer.confidence === "high" && <span className="size-1.5 rounded-full bg-emerald-500" />}
+            {answer.confidence === "medium" && <span className="size-1.5 rounded-full bg-amber-500" />}
+            {answer.confidence === "low" && <span className="size-1.5 rounded-full bg-red-500" />}
             置信度 {confidenceLabels[answer.confidence]}
           </span>
           <MetaPill icon={Clock3} label={`${run.latencyMs} ms`} />
@@ -320,17 +342,17 @@ function AnswerPanel({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-normal text-ink">
+        <h2 className="text-sm font-bold text-ink tracking-tight uppercase">
           回答
         </h2>
-        <p className="whitespace-pre-wrap text-base leading-8 text-slate-700">
+        <p className="whitespace-pre-wrap text-sm leading-6 tracking-wide text-slate-600 font-normal">
           {answer.answer}
         </p>
       </div>
 
       {answer.evidence.length > 0 ? (
-        <section className="mt-6 space-y-3">
-          <SectionTitle icon={Quote} label="证据" />
+        <section className="space-y-3 pt-2">
+          <SectionTitle icon={Quote} label="证据来源" />
           <div className="grid gap-3">
             {answer.evidence.map((evidence, index) => (
               <EvidenceCard
@@ -348,14 +370,15 @@ function AnswerPanel({
       ) : null}
 
       {answer.missingInfo.length > 0 ? (
-        <section className="mt-6 space-y-3">
+        <section className="space-y-3 pt-2">
           <SectionTitle icon={HelpCircle} label="缺失信息" />
           <ul className="grid gap-2">
             {answer.missingInfo.map((item) => (
               <li
                 key={item}
-                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800"
+                className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-slate-50/50 px-4 py-2.5 text-xs leading-5 text-slate-500"
               >
+                <span className="size-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
                 {item}
               </li>
             ))}
@@ -364,7 +387,7 @@ function AnswerPanel({
       ) : null}
 
       {hasRelated ? (
-        <section className="mt-6 space-y-3">
+        <section className="space-y-3 pt-2">
           <SectionTitle icon={TableProperties} label="相关记忆" />
           <div className="grid gap-3 md:grid-cols-2">
             <RelatedGroup label="决策" items={answer.related.decisions} />
@@ -400,30 +423,97 @@ function EvidenceCard({
     : null;
 
   return (
-    <div className="rounded-lg border border-line bg-slate-50 px-4 py-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
-          <MetaPill icon={FileText} label={evidence.file} />
-          {evidence.date ? <MetaPill icon={Clock3} label={evidence.date} /> : null}
-          {hasChunkTarget ? (
-            <MetaPill icon={Hash} label={`Chunk ${chunkIndex + 1}`} />
-          ) : null}
+    <div className="rounded-lg border border-black/[0.06] bg-slate-50/30 p-4 space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <FileText size={14} className="text-slate-400" />
+          <span className="text-xs font-semibold text-slate-700 truncate">
+            {evidence.file}
+          </span>
+          {hasChunkTarget && (
+            <span className="inline-flex items-center gap-0.5 rounded bg-slate-100 border border-black/[0.04] px-1 text-xs font-bold text-slate-500">
+              <Hash size={9} />
+              {chunkIndex}
+            </span>
+          )}
         </div>
-        {sourceHref ? (
+        {sourceHref && (
           <Link
             href={sourceHref}
-            className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-white px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-ink transition-transform duration-300 hover:translate-x-0.5"
           >
-            <ExternalLink aria-hidden="true" size={14} />
-            {hasChunkTarget ? "查看片段" : "查看来源"}
+            查看原文
+            <ExternalLink size={10} />
           </Link>
-        ) : null}
+        )}
       </div>
-      <p className="mt-3 break-words text-sm leading-6 text-slate-700">
-        {evidence.quote}
-      </p>
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        {evidence.relevance}
+      <blockquote className="border-l border-slate-300 pl-3.5 py-0.5 text-xs italic leading-6 text-slate-500">
+        “{evidence.quote}”
+      </blockquote>
+      {evidence.relevance && (
+        <p className="text-xs leading-5 text-slate-400">
+          <span className="font-bold text-slate-600">相关度解析：</span>
+          {evidence.relevance}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function RelatedGroup({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-black/[0.06] p-4 space-y-2 bg-slate-50/10">
+      <h3 className="text-xs font-bold text-slate-700 tracking-wider">
+        {label}
+      </h3>
+      <ul className="space-y-1.5">
+        {items.map((item) => (
+          <li
+            key={item}
+            className="flex items-start gap-2 text-xs leading-5 text-slate-500"
+          >
+            <span className="size-1 rounded-full bg-slate-400 mt-2 shrink-0" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SectionTitle({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <div className="flex items-center gap-2 border-t border-black/[0.04] pt-4">
+      <Icon size={14} className="text-slate-400" />
+      <h3 className="text-xs font-bold text-ink uppercase tracking-tight">
+        {label}
+      </h3>
+    </div>
+  );
+}
+
+function MetaPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.06] bg-slate-50 px-2.5 py-0.5 text-slate-500 font-bold">
+      <Icon size={12} />
+      {label}
+    </span>
+  );
+}
+
+function EmptyAskState() {
+  return (
+    <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-black/[0.08] bg-white px-6 py-12 text-center shadow-card animate-fade-in-up">
+      <div className="mb-4 flex size-12 items-center justify-center rounded-xl border border-black/[0.06] bg-slate-50 text-slate-500">
+        <MessageSquareText aria-hidden="true" size={20} strokeWidth={1.5} />
+      </div>
+      <h2 className="text-base font-semibold tracking-tight text-ink">
+        提问项目记忆
+      </h2>
+      <p className="mt-1.5 max-w-xs text-xs leading-5 text-slate-400">
+        在上方文本框中输入一个关于项目的具体问题，基于已上传文档的记忆系统将为您提供精确的回答与来源依据。
       </p>
     </div>
   );
@@ -433,98 +523,25 @@ function findEvidenceSourceDocument(
   evidence: AskRunDto["answer"]["evidence"][number],
   sourceDocuments: AskSourceDocument[],
 ) {
-  if (evidence.documentId) {
-    const document = sourceDocuments.find(
-      (candidate) => candidate.id === evidence.documentId,
-    );
-
-    if (document) {
-      return document;
-    }
-  }
-
-  const normalizedFileName = normalizeFileName(evidence.file);
-
-  return sourceDocuments.find(
-    (document) => normalizeFileName(document.fileName) === normalizedFileName,
+  const match = sourceDocuments.find(
+    (doc) => doc.fileName.toLowerCase() === evidence.file.toLowerCase(),
   );
-}
 
-function normalizeFileName(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function RelatedGroup({ label, items }: { label: string; items: string[] }) {
-  return (
-    <div className="rounded-lg border border-line bg-slate-50 px-3 py-3">
-      <p className="text-sm font-semibold text-ink">{label}</p>
-      {items.length > 0 ? (
-        <ul className="mt-2 space-y-1">
-          {items.map((item) => (
-            <li key={item} className="text-sm leading-6 text-slate-600">
-              {item}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-2 text-sm text-slate-500">无</p>
-      )}
-    </div>
-  );
-}
-
-function SectionTitle({
-  icon: Icon,
-  label,
-}: {
-  icon: LucideIcon;
-  label: string;
-}) {
-  return (
-    <h3 className="inline-flex items-center gap-2 text-base font-semibold tracking-normal text-ink">
-      <Icon aria-hidden="true" size={18} className="text-teal-600" />
-      {label}
-    </h3>
-  );
-}
-
-function MetaPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
-  return (
-    <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-medium text-slate-600">
-      <Icon aria-hidden="true" size={15} className="shrink-0" />
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function EmptyAskState() {
-  return (
-    <section className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-white px-6 py-12 text-center shadow-soft">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-        <MessageSquareText aria-hidden="true" size={24} strokeWidth={2} />
-      </div>
-      <h2 className="text-xl font-semibold tracking-normal text-ink">
-        暂无问答
-      </h2>
-      <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-        上传并完成文档摄取后，即可向项目记忆提问。
-      </p>
-    </section>
-  );
+  return match;
 }
 
 function toUserFacingError(code: string, fallbackMessage: string) {
-  if (code === "ASK_UNAVAILABLE") {
-    return "请先上传文档并等待摄取完成，再进行提问。";
+  if (code === "PROJECT_NOT_READY") {
+    return "项目仍在解析文档，请稍候再提问。";
   }
 
-  if (code === "VALIDATION_ERROR") {
-    return "请输入一个有效的问题。";
+  if (code === "NO_SOURCE_DOCUMENTS") {
+    return "请先上传至少一个文档，以便系统为您分析和回答问题。";
   }
 
   return fallbackMessage || "无法回答该问题。";
 }
 
-function formatDateTime(value: string) {
-  return dateTimeFormatter.format(new Date(value));
+function formatDateTime(value: string | null) {
+  return value ? dateTimeFormatter.format(new Date(value)) : "暂无记录";
 }

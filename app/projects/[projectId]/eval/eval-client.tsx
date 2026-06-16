@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
-  BarChart3,
   CheckCircle2,
   Clock3,
   FileSearch,
@@ -66,12 +65,17 @@ const confidenceLabels = {
   low: "低",
 } as const;
 
+// 置信度精细小徽章样式，无多彩背景
 const confidenceStyles = {
-  high: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  medium: "border-amber-200 bg-amber-50 text-amber-700",
-  low: "border-red-200 bg-red-50 text-red-700",
+  high: "border-black/[0.06] bg-slate-50 text-slate-700",
+  medium: "border-black/[0.06] bg-slate-50 text-slate-700",
+  low: "border-black/[0.06] bg-slate-50 text-red-600",
 } as const;
 
+/**
+ * 评估模块客户端组件
+ * 支持新增测试用例（包括评估问题、期望数据来源及预期事实），批量及单次执行问答评估，并查看多维评估结果（依据分、命中率等）。
+ */
 export function EvalClient({
   projectId,
   projectName,
@@ -220,38 +224,39 @@ export function EvalClient({
       label: "用例",
       value: summary.totalCases,
       icon: Radar,
-      className: "border-teal-200 bg-teal-50 text-teal-700",
+      className: "border-black/[0.06] bg-white text-ink",
     },
     {
       label: "已运行",
       value: summary.casesWithRuns,
       icon: Play,
-      className: "border-sky-200 bg-sky-50 text-sky-700",
+      className: "border-black/[0.06] bg-white text-slate-700",
     },
     {
       label: "来源命中",
       value: summary.sourceMatches,
       icon: BadgeCheck,
-      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      className: "border-black/[0.06] bg-white text-slate-700",
     },
     {
       label: "平均依据分",
-      value: summary.averageGroundednessScore ?? "未记录",
+      value: summary.averageGroundednessScore ?? "未评估",
       icon: Gauge,
-      className: "border-amber-200 bg-amber-50 text-amber-700",
+      className: "border-black/[0.06] bg-white text-slate-700",
     },
   ];
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* 测评数据面板 */}
       <section className="min-w-0 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-3">
-            <p className="text-sm font-semibold text-teal-700">{projectName}</p>
-            <h1 className="text-4xl font-semibold tracking-normal text-ink">
+          <div className="min-w-0 space-y-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{projectName}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">
               评估
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-slate-600">
+            <p className="max-w-2xl text-sm text-slate-500">
               固定问题集用于检查系统能不能找到正确依据，并基于依据回答问题。
             </p>
           </div>
@@ -259,35 +264,37 @@ export function EvalClient({
             type="button"
             onClick={handleRunAll}
             disabled={isRunningAll || cases.length === 0}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {isRunningAll ? (
               <LoaderCircle
                 aria-hidden="true"
-                size={18}
+                size={14}
                 className="animate-spin"
               />
             ) : (
-              <Play aria-hidden="true" size={18} />
+              <Play aria-hidden="true" size={14} />
             )}
-            {isRunningAll ? "运行中..." : "运行全部"}
+            {isRunningAll ? "运行中..." : "运行全部用例"}
           </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {summaryItems.map((item) => {
+        {/* 顶部统计项 */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryItems.map((item, index) => {
             const Icon = item.icon;
 
             return (
               <div
                 key={item.label}
-                className={`rounded-lg border p-4 shadow-soft ${item.className}`}
+                style={{ animationDelay: `${index * 60}ms` }}
+                className={`animate-fade-in-up rounded-xl border p-5 shadow-card ${item.className}`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <Icon aria-hidden="true" size={18} />
+                  <span className="text-xs font-semibold text-slate-400">{item.label}</span>
+                  <Icon aria-hidden="true" size={14} className="text-slate-400" />
                 </div>
-                <p className="mt-3 text-3xl font-semibold tracking-normal">
+                <p className="mt-2 text-2xl font-bold tracking-tight text-ink">
                   {item.value}
                 </p>
               </div>
@@ -296,26 +303,28 @@ export function EvalClient({
         </div>
 
         {summary.latestRunAt ? (
-          <p className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm text-slate-600 shadow-soft">
-            <Clock3 aria-hidden="true" size={16} className="text-teal-600" />
-            最近运行：{formatDateTime(summary.latestRunAt)}
+          <p className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.06] bg-white px-3 py-1.5 text-xs text-slate-500 shadow-card animate-fade-in-up delay-75">
+            <Clock3 aria-hidden="true" size={13} className="text-slate-400" />
+            最近运行时间：{formatDateTime(summary.latestRunAt)}
           </p>
         ) : null}
 
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+          <p className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs font-medium text-red-600 animate-fade-in-up">
             {error}
           </p>
         ) : null}
 
+        {/* 评估用例列表 */}
         {cases.length > 0 ? (
-          <div className="grid gap-4">
-            {cases.map((evalCase) => (
+          <div className="grid gap-4 animate-fade-in-up delay-150">
+            {cases.map((evalCase, index) => (
               <EvalCaseCard
                 key={evalCase.id}
                 evalCase={evalCase}
                 isRunning={runningCaseId === evalCase.id}
                 onRun={() => handleRunCase(evalCase.id)}
+                index={index}
               />
             ))}
           </div>
@@ -324,17 +333,18 @@ export function EvalClient({
         )}
       </section>
 
-      <aside className="h-fit min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
-        <form onSubmit={handleCreateCase} className="space-y-5">
+      {/* 右侧新增用例表单 */}
+      <aside className="h-fit min-w-0 rounded-xl border border-black/[0.06] bg-white p-6 shadow-card">
+        <form onSubmit={handleCreateCase} className="space-y-4">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-ink text-white">
-              <Plus aria-hidden="true" size={20} />
+            <span className="flex size-9 items-center justify-center rounded-lg bg-ink text-white">
+              <Plus aria-hidden="true" size={18} />
             </span>
             <div>
-              <h2 className="text-lg font-semibold tracking-normal text-ink">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">
                 新增用例
               </h2>
-              <p className="text-sm text-slate-500">每行一个 来源 或 事实</p>
+              <p className="text-xs text-slate-400">单行表示一个来源或预期事实</p>
             </div>
           </div>
 
@@ -342,52 +352,52 @@ export function EvalClient({
             id="eval-question"
             label="评估问题"
             value={question}
-            rows={5}
+            rows={3}
             maxLength={MAX_EVAL_CASE_QUESTION_LENGTH}
-            placeholder="例如：为什么不用按量计费？"
+            placeholder="例如：为什么定价不用按量计费模式？"
             disabled={isCreating}
             onChange={setQuestion}
           />
 
           <LabeledTextarea
             id="eval-sources"
-            label="来源"
+            label="期望数据来源 (文件名)"
             value={expectedSources}
-            rows={4}
-            placeholder="(产品名称)定价会议记录.md"
+            rows={3}
+            placeholder="pricing-meeting-notes.md"
             disabled={isCreating}
             onChange={setExpectedSources}
           />
 
           <LabeledTextarea
             id="eval-facts"
-            label="预期事实"
+            label="预期关键事实"
             value={expectedFacts}
-            rows={5}
-            placeholder="用户觉得按量计费不够透明"
+            rows={3}
+            placeholder="按量定价对客户而言预测月度账单较为困难"
             disabled={isCreating}
             onChange={setExpectedFacts}
           />
 
-          <p className="text-xs leading-5 text-slate-500">
-            单项最多 {MAX_EVAL_LIST_ITEM_LENGTH} 个字符。
+          <p className="text-xs text-slate-400 leading-normal">
+            单条内容最大限制为 {MAX_EVAL_LIST_ITEM_LENGTH} 个字符。
           </p>
 
           <button
             type="submit"
             disabled={isCreating}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {isCreating ? (
               <LoaderCircle
                 aria-hidden="true"
-                size={18}
+                size={14}
                 className="animate-spin"
               />
             ) : (
-              <Plus aria-hidden="true" size={18} />
+              <Plus aria-hidden="true" size={14} />
             )}
-            {isCreating ? "创建中..." : "创建用例"}
+            {isCreating ? "创建中..." : "保存用例"}
           </button>
         </form>
       </aside>
@@ -399,47 +409,54 @@ function EvalCaseCard({
   evalCase,
   isRunning,
   onRun,
+  index
 }: {
   evalCase: EvalCaseDto;
   isRunning: boolean;
   onRun: () => void;
+  index: number;
 }) {
   const latestRun = evalCase.latestRun;
 
   return (
-    <article className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft">
+    <article
+      style={{ animationDelay: `${index * 50}ms` }}
+      className="animate-fade-in-up min-w-0 rounded-xl border border-black/[0.06] bg-white p-6 shadow-card transition-all duration-500 ease-smooth hover:-translate-y-0.5 hover:border-black/20 hover:shadow-premium"
+    >
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 space-y-3">
+        <div className="min-w-0 space-y-4">
           <div className="flex min-w-0 items-start gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-              <Target aria-hidden="true" size={20} />
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-black/[0.06] bg-slate-50 text-slate-500">
+              <Target aria-hidden="true" size={16} />
             </span>
-            <div className="min-w-0 space-y-2">
-              <h2 className="break-words text-lg font-semibold tracking-normal text-ink">
+            <div className="min-w-0 space-y-1">
+              <h2 className="break-words text-base font-semibold tracking-tight text-ink">
                 {evalCase.question}
               </h2>
-              <p className="text-sm text-slate-500">
-                创建于 {formatDateTime(evalCase.createdAt)}
+              <p className="text-xs font-medium text-slate-400">
+                创建时间：{formatDateTime(evalCase.createdAt)}
               </p>
             </div>
           </div>
 
-          <ExpectedList label="来源" items={evalCase.expectedSources} />
-          <ExpectedList label="预期事实" items={evalCase.expectedFacts} />
+          <div className="space-y-2.5">
+            <ExpectedList label="目标来源" items={evalCase.expectedSources} />
+            <ExpectedList label="预期覆盖事实" items={evalCase.expectedFacts} />
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-sm lg:max-w-64 lg:flex-col lg:items-end">
+        <div className="flex flex-wrap gap-2 text-xs font-semibold lg:max-w-64 lg:flex-col lg:items-end">
           {latestRun ? (
             <>
               <SourceMatchPill sourceMatch={latestRun.sourceMatch} />
               <MetaPill
                 icon={Gauge}
-                label={`${latestRun.groundednessScore}/5`}
+                label={`依据分 ${latestRun.groundednessScore}/5`}
               />
               <MetaPill icon={Clock3} label={`${latestRun.latencyMs} ms`} />
             </>
           ) : (
-            <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm font-semibold text-slate-600">
+            <span className="rounded-lg border border-black/[0.06] bg-slate-50 px-2.5 py-0.5 font-bold text-slate-500">
               未运行
             </span>
           )}
@@ -447,18 +464,18 @@ function EvalCaseCard({
             type="button"
             onClick={onRun}
             disabled={isRunning}
-            className="inline-flex h-10 w-20 items-center justify-center gap-2 rounded-lg bg-ink px-3 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex h-9 w-20 items-center justify-center gap-1 rounded-lg bg-ink px-3 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {isRunning ? (
               <LoaderCircle
                 aria-hidden="true"
-                size={16}
+                size={12}
                 className="animate-spin"
               />
             ) : (
-              <Play aria-hidden="true" size={16} />
+              <Play aria-hidden="true" size={12} />
             )}
-            {isRunning ? "运行中" : "运行"}
+            {isRunning ? "进行中" : "运行"}
           </button>
         </div>
       </div>
@@ -470,56 +487,58 @@ function EvalCaseCard({
 
 function EvalRunPanel({ run }: { run: EvalRunDto }) {
   return (
-    <section className="mt-5 space-y-4 border-t border-line pt-5">
+    <section className="mt-5 space-y-5 border-t border-black/[0.05] pt-5">
+      {/* 结果数据指标面板，脱色处理，去除非必要红绿背景，改用素净无渐变卡片 */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <ResultStat
           icon={run.sourceMatch ? CheckCircle2 : XCircle}
-          label="来源"
-          value={run.sourceMatch ? "通过" : "未通过"}
+          label="来源匹配"
+          value={run.sourceMatch ? "通过" : "缺失"}
           className={
             run.sourceMatch
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-red-200 bg-red-50 text-red-700"
+              ? "border-black/[0.06] bg-slate-50 text-emerald-600"
+              : "border-black/[0.06] bg-slate-50 text-red-500"
           }
         />
         <ResultStat
           icon={Gauge}
           label="依据充分性"
-          value={`${run.groundednessScore}/5`}
-          className="border-amber-200 bg-amber-50 text-amber-700"
+          value={`${run.groundednessScore} / 5`}
+          className="border-black/[0.06] bg-slate-50 text-slate-700"
         />
         <ResultStat
           icon={BadgeCheck}
-          label="可信度"
+          label="回答可信度"
           value={confidenceLabels[run.answer.confidence]}
           className={confidenceStyles[run.answer.confidence]}
         />
         <ResultStat
-          icon={BarChart3}
-          label="Token usage"
+          icon={Radar}
+          label="评估 Token"
           value={formatTokenUsage(run.tokenUsage)}
-          className="border-slate-200 bg-slate-50 text-slate-700"
+          className="border-black/[0.06] bg-slate-50 text-slate-500"
         />
       </div>
 
-      <div className="space-y-3">
-        <SectionTitle icon={Quote} label="回答" />
-        <div className="rounded-lg border border-line bg-slate-50 px-4 py-3">
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+      <div className="space-y-2">
+        <SectionTitle icon={Quote} label="生成答案" />
+        <div className="rounded-lg border border-black/[0.05] bg-slate-50/30 px-4 py-3">
+          <p className="whitespace-pre-wrap text-xs leading-6 text-slate-500 font-normal">
             {run.answer.answer}
           </p>
         </div>
       </div>
+
       <div className="space-y-3">
-        <SectionTitle icon={FileSearch} label="检索来源" />
+        <SectionTitle icon={FileSearch} label="检索到的 Chunks" />
         {run.retrievedSources.length > 0 ? (
           <div className="grid gap-3">
             {run.retrievedSources.map((source) => (
               <div
                 key={source.chunkId}
-                className="rounded-lg border border-line bg-slate-50 px-4 py-3"
+                className="rounded-lg border border-black/[0.06] bg-slate-50/20 px-4 py-3.5 space-y-2.5"
               >
-                <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                   <MetaPill icon={FileSearch} label={source.fileName} />
                   <MetaPill
                     icon={Target}
@@ -530,15 +549,15 @@ function EvalRunPanel({ run }: { run: EvalRunDto }) {
                     label={`distance ${source.distance.toFixed(4)}`}
                   />
                 </div>
-                <p className="mt-3 break-words text-sm leading-6 text-slate-700">
-                  {source.quote}
+                <p className="break-words text-xs leading-5 text-slate-500 italic">
+                  “{source.quote}”
                 </p>
               </div>
             ))}
           </div>
         ) : (
-          <p className="rounded-lg border border-dashed border-line bg-white px-3 py-6 text-center text-sm text-slate-600">
-            未检索到来源。
+          <p className="rounded-xl border border-dashed border-black/[0.08] bg-slate-50/50 px-3 py-6 text-center text-xs text-slate-400">
+            未能检索到任何来源片段。
           </p>
         )}
       </div>
@@ -548,15 +567,15 @@ function EvalRunPanel({ run }: { run: EvalRunDto }) {
 
 function ExpectedList({ label, items }: { label: string; items: string[] }) {
   return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+    <div className="space-y-1.5">
+      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
         {label}
       </p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {items.map((item) => (
           <span
             key={item}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600"
+            className="rounded-md border border-black/[0.04] bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-500"
           >
             {item}
           </span>
@@ -578,12 +597,12 @@ function ResultStat({
   className: string;
 }) {
   return (
-    <div className={`rounded-lg border p-3 ${className}`}>
+    <div className={`rounded-xl border p-4 shadow-sm ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold">{label}</span>
-        <Icon aria-hidden="true" size={16} />
+        <span className="text-xs font-bold uppercase tracking-wider opacity-80">{label}</span>
+        <Icon aria-hidden="true" size={13} className="opacity-80" />
       </div>
-      <p className="mt-2 text-lg font-semibold tracking-normal">{value}</p>
+      <p className="mt-1.5 text-base font-bold tracking-tight">{value}</p>
     </div>
   );
 }
@@ -591,16 +610,16 @@ function ResultStat({
 function SourceMatchPill({ sourceMatch }: { sourceMatch: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-lg border px-2 py-1 font-semibold ${
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 font-bold ${
         sourceMatch
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-red-200 bg-red-50 text-red-700"
+          ? "border-black/[0.06] bg-slate-50 text-emerald-600"
+          : "border-black/[0.06] bg-slate-50 text-red-500"
       }`}
     >
       {sourceMatch ? (
-        <CheckCircle2 aria-hidden="true" size={15} />
+        <CheckCircle2 aria-hidden="true" size={12} />
       ) : (
-        <XCircle aria-hidden="true" size={15} />
+        <XCircle aria-hidden="true" size={12} />
       )}
       {sourceMatch ? "来源命中" : "来源缺失"}
     </span>
@@ -627,8 +646,8 @@ function LabeledTextarea({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium text-ink">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="text-xs font-semibold text-slate-600">
         {label}
       </label>
       <textarea
@@ -639,7 +658,7 @@ function LabeledTextarea({
         placeholder={placeholder}
         disabled={disabled}
         onChange={(event) => onChange(event.currentTarget.value)}
-        className="block w-full resize-y rounded-lg border border-line bg-white px-3 py-3 text-sm leading-6 text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-50"
+        className="block w-full resize-none rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs leading-5 text-ink outline-none transition-all duration-300 focus:border-black/30 focus:ring-2 focus:ring-black/[0.03] disabled:cursor-not-allowed disabled:bg-slate-50"
       />
     </div>
   );
@@ -653,8 +672,8 @@ function SectionTitle({
   label: string;
 }) {
   return (
-    <h3 className="inline-flex items-center gap-2 text-base font-semibold tracking-normal text-ink">
-      <Icon aria-hidden="true" size={18} className="text-teal-600" />
+    <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-ink uppercase tracking-tight">
+      <Icon aria-hidden="true" size={13} className="text-slate-400" />
       {label}
     </h3>
   );
@@ -662,8 +681,8 @@ function SectionTitle({
 
 function MetaPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-medium text-slate-600">
-      <Icon aria-hidden="true" size={15} className="shrink-0" />
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-black/[0.06] bg-slate-50 px-2.5 py-0.5 font-bold text-slate-500">
+      <Icon aria-hidden="true" size={12} className="shrink-0" />
       <span className="truncate">{label}</span>
     </span>
   );
@@ -671,17 +690,17 @@ function MetaPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
 
 function EmptyEvalState() {
   return (
-    <section className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-white px-6 py-12 text-center shadow-soft">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-        <Radar aria-hidden="true" size={24} strokeWidth={2} />
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-black/[0.08] bg-white px-6 py-12 text-center shadow-card animate-fade-in-up delay-150">
+      <div className="mb-4 flex size-12 items-center justify-center rounded-xl border border-black/[0.06] bg-slate-50 text-slate-500">
+        <Radar aria-hidden="true" size={20} strokeWidth={1.5} />
       </div>
-      <h2 className="text-xl font-semibold tracking-normal text-ink">
-        暂无 eval case
+      <h2 className="text-base font-semibold tracking-tight text-ink">
+        暂无评估用例
       </h2>
-      <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-        新增固定问题、expected sources 和 expected facts 后即可运行评估。
+      <p className="mt-1.5 max-w-xs text-xs leading-5 text-slate-400">
+        在右侧面板新增固定测试问题、期望数据来源及预期事实后，即可一键运行各项评估指标。
       </p>
-    </section>
+    </div>
   );
 }
 
@@ -698,18 +717,18 @@ function parseTextList(value: string) {
 
 function toUserFacingError(code: string, fallbackMessage: string) {
   if (code === "EVAL_UNAVAILABLE") {
-    return "请先上传文档并等待摄取完成，再运行 eval。";
+    return "请先上传文档并等待摄取完成，再运行评估。";
   }
 
   if (code === "EVAL_CASE_NOT_FOUND") {
-    return "Eval case 不存在。";
+    return "评估用例不存在。";
   }
 
   if (code === "VALIDATION_ERROR") {
-    return fallbackMessage || "请输入有效的 eval case。";
+    return fallbackMessage || "请输入有效的评估用例。";
   }
 
-  return fallbackMessage || "无法处理 eval 请求。";
+  return fallbackMessage || "无法处理评估请求。";
 }
 
 function formatTokenUsage(value: unknown): string {

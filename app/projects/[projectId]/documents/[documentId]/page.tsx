@@ -12,7 +12,7 @@ import {
   Lightbulb,
   Quote,
   ShieldAlert,
-  TableProperties
+  TableProperties,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
@@ -24,7 +24,7 @@ import type {
   DecisionMemoryDto,
   OpenQuestionMemoryDto,
   RiskMemoryDto,
-  RiskSeverityDto
+  RiskSeverityDto,
 } from "@/lib/memories/types";
 import { getProject } from "@/lib/projects/service";
 
@@ -42,13 +42,13 @@ const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   day: "numeric",
   year: "numeric",
   hour: "numeric",
-  minute: "2-digit"
+  minute: "2-digit",
 });
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "short",
   day: "numeric",
-  year: "numeric"
+  year: "numeric",
 });
 
 const numberFormatter = new Intl.NumberFormat("zh-CN");
@@ -56,34 +56,34 @@ const numberFormatter = new Intl.NumberFormat("zh-CN");
 const documentStatusStyles: Record<DocumentStatusDto, string> = {
   processing: "border-sky-200 bg-sky-50 text-sky-700",
   ready: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  failed: "border-red-200 bg-red-50 text-red-700"
+  failed: "border-red-200 bg-red-50 text-red-700",
 };
 
 const documentStatusLabels: Record<DocumentStatusDto, string> = {
   processing: "处理中",
   ready: "可用",
-  failed: "失败"
+  failed: "失败",
 };
 
 const actionStatusLabels: Record<ActionItemStatusDto, string> = {
   open: "未开始",
   in_progress: "进行中",
-  done: "已完成"
+  done: "已完成",
 };
 
 const riskSeverityLabels: Record<RiskSeverityDto, string> = {
   low: "低",
   medium: "中",
-  high: "高"
+  high: "高",
 };
 
 export default async function DocumentDetailPage({
-  params
+  params,
 }: DocumentDetailPageProps) {
   const { projectId, documentId } = params;
   const [project, detail] = await Promise.all([
     getProject(projectId),
-    getProjectDocumentDetail(projectId, documentId)
+    getProjectDocumentDetail(projectId, documentId),
   ]);
 
   if (!project || !detail) {
@@ -137,7 +137,10 @@ export default async function DocumentDetailPage({
                 {documentStatusLabels[document.status]}
               </span>
               <MetaPill icon={Hash} label={`${chunks.length} 个片段`} />
-              <MetaPill icon={TableProperties} label={`${memoryTotal} 条记忆`} />
+              <MetaPill
+                icon={TableProperties}
+                label={`${memoryTotal} 条记忆`}
+              />
             </div>
           </div>
 
@@ -158,7 +161,7 @@ export default async function DocumentDetailPage({
                 icon={FileText}
                 title="原文"
                 description={`${numberFormatter.format(
-                  document.rawTextCharacterCount
+                  document.rawTextCharacterCount,
                 )} 个字符`}
               />
               <pre className="mt-4 max-h-[560px] overflow-auto whitespace-pre-wrap break-words rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
@@ -269,13 +272,22 @@ export default async function DocumentDetailPage({
             </h2>
             <dl className="mt-4 space-y-3 text-sm">
               <DetailRow label="MIME type" value={document.mimeType} />
-              <DetailRow label="创建时间" value={formatDateTime(document.createdAt)} />
-              <DetailRow label="更新时间" value={formatDateTime(document.updatedAt)} />
+              <DetailRow
+                label="创建时间"
+                value={formatDateTime(document.createdAt)}
+              />
+              <DetailRow
+                label="更新时间"
+                value={formatDateTime(document.updatedAt)}
+              />
               <DetailRow label="片段数" value={String(chunks.length)} />
               <DetailRow label="记忆数" value={String(memoryTotal)} />
             </dl>
 
             <nav aria-label="文档详情导航" className="mt-5 grid gap-2 text-sm">
+              <h3 className="text-base font-semibold tracking-normal text-ink">
+                链接
+              </h3>
               <a
                 href="#raw"
                 className="rounded-lg px-3 py-2 font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
@@ -305,7 +317,7 @@ export default async function DocumentDetailPage({
 function SectionHeader({
   icon: Icon,
   title,
-  description
+  description,
 }: {
   icon: LucideIcon;
   title: string;
@@ -332,7 +344,7 @@ function MemoryGroup({
   icon: Icon,
   title,
   count,
-  children
+  children,
 }: {
   icon: LucideIcon;
   title: string;
@@ -368,7 +380,7 @@ function DecisionItem({ decision }: { decision: DecisionMemoryDto }) {
         formatDate(decision.date),
         decision.participants.length > 0
           ? decision.participants.join("、")
-          : "无参与人记录"
+          : "无参与人记录",
       ]}
       quote={decision.sourceQuote}
     >
@@ -379,11 +391,7 @@ function DecisionItem({ decision }: { decision: DecisionMemoryDto }) {
   );
 }
 
-function ActionItemItem({
-  actionItem
-}: {
-  actionItem: ActionItemMemoryDto;
-}) {
+function ActionItemItem({ actionItem }: { actionItem: ActionItemMemoryDto }) {
   return (
     <MemoryItem
       title={actionItem.title}
@@ -391,7 +399,7 @@ function ActionItemItem({
       meta={[
         `负责人：${actionItem.owner ?? "未分配"}`,
         `状态：${actionStatusLabels[actionItem.status]}`,
-        `截止：${formatDate(actionItem.dueDate)}`
+        `截止：${formatDate(actionItem.dueDate)}`,
       ]}
       quote={actionItem.sourceQuote}
     />
@@ -399,7 +407,7 @@ function ActionItemItem({
 }
 
 function OpenQuestionItem({
-  openQuestion
+  openQuestion,
 }: {
   openQuestion: OpenQuestionMemoryDto;
 }) {
@@ -433,7 +441,7 @@ function MemoryItem({
   body,
   meta,
   quote,
-  children
+  children,
 }: {
   title: string;
   body: string;

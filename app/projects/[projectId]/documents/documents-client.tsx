@@ -44,10 +44,11 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   minute: "2-digit"
 });
 
+// 精细小徽章边框样式，去除带彩色背景
 const statusStyles: Record<DocumentStatusDto, string> = {
-  processing: "border-sky-200 bg-sky-50 text-sky-700",
-  ready: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  failed: "border-red-200 bg-red-50 text-red-700"
+  processing: "border-black/[0.06] bg-slate-50 text-slate-500",
+  ready: "border-black/[0.06] bg-slate-50 text-slate-800",
+  failed: "border-black/[0.06] bg-slate-50 text-red-600"
 };
 
 const statusLabels: Record<DocumentStatusDto, string> = {
@@ -56,6 +57,10 @@ const statusLabels: Record<DocumentStatusDto, string> = {
   failed: "失败"
 };
 
+/**
+ * 文档管理客户端页面组件
+ * 展示文档列表、统计数据及上传表单，运用平滑错落的入场动画。
+ */
 export function DocumentsClient({
   projectId,
   projectName,
@@ -120,61 +125,63 @@ export function DocumentsClient({
       label: "总数",
       value: summary.total,
       icon: Files,
-      className: "border-slate-200 bg-white text-ink"
+      className: "border-black/[0.06] bg-white text-ink"
     },
     {
       label: "可用",
       value: summary.ready,
       icon: CheckCircle2,
-      className: "border-emerald-200 bg-emerald-50 text-emerald-700"
+      className: "border-black/[0.06] bg-white text-slate-700"
     },
     {
       label: "处理中",
       value: summary.processing,
       icon: LoaderCircle,
-      className: "border-sky-200 bg-sky-50 text-sky-700"
+      className: "border-black/[0.06] bg-white text-slate-700"
     },
     {
       label: "失败",
       value: summary.failed,
       icon: AlertTriangle,
-      className: "border-red-200 bg-red-50 text-red-700"
+      className: "border-black/[0.06] bg-white text-red-600"
     }
   ];
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
       <section className="min-w-0 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-teal-700">{projectName}</p>
-            <h1 className="text-4xl font-semibold tracking-normal text-ink">
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{projectName}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">
               文档
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-slate-600">
+            <p className="max-w-2xl text-sm text-slate-500">
               已上传的源文件、可检索片段和提取出的项目记忆。
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-slate-700">
-            <Files aria-hidden="true" size={18} className="text-teal-600" />
+          <div className="flex items-center gap-2 rounded-lg border border-black/[0.06] bg-white px-3.5 py-2 text-sm font-semibold text-slate-600">
+            <Files aria-hidden="true" size={15} className="text-slate-400" />
             {summary.total} 个文档
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {summaryItems.map((item) => {
+        {/* 顶部统计栏 */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryItems.map((item, index) => {
             const Icon = item.icon;
 
             return (
               <div
                 key={item.label}
-                className={`rounded-lg border p-4 shadow-soft ${item.className}`}
+                style={{ animationDelay: `${index * 60}ms` }}
+                className={`animate-fade-in-up rounded-xl border p-5 shadow-card ${item.className}`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <Icon aria-hidden="true" size={18} />
+                  <span className="text-sm font-semibold text-slate-400">{item.label}</span>
+                  <Icon aria-hidden="true" size={14} className="text-slate-400" />
                 </div>
-                <p className="mt-3 text-3xl font-semibold tracking-normal">
+                <p className="mt-2 text-2xl font-bold tracking-tight text-ink">
                   {item.value}
                 </p>
               </div>
@@ -182,55 +189,66 @@ export function DocumentsClient({
           })}
         </div>
 
+        {/* 文档列表卡片 */}
         {documents.length > 0 ? (
-          <div className="grid gap-3">
-            {documents.map((document) => (
+          <div className="grid gap-4 animate-fade-in-up delay-200">
+            {documents.map((document, index) => (
               <article
                 key={document.id}
-                className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line bg-white p-5 shadow-soft sm:grid-cols-[minmax(0,1fr)_auto]"
+                style={{ animationDelay: `${index * 50}ms` }}
+                className="animate-fade-in-up grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 rounded-xl border border-black/[0.06] bg-white p-6 shadow-card transition-all duration-500 ease-smooth hover:-translate-y-0.5 hover:border-black/20 hover:shadow-premium sm:grid-cols-[minmax(0,1fr)_auto]"
               >
                 <div className="min-w-0 space-y-2">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-                      <FileText aria-hidden="true" size={20} />
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-black/[0.06] bg-slate-50 text-slate-600">
+                      <FileText aria-hidden="true" size={16} />
                     </span>
                     <div className="min-w-0">
-                      <h2 className="truncate text-lg font-semibold tracking-normal text-ink">
+                      <h2 className="truncate text-base font-semibold tracking-tight text-ink">
                         {document.fileName}
                       </h2>
-                      <p className="truncate text-sm text-slate-500">
+                      <p className="truncate text-xs font-medium text-slate-400">
                         {document.mimeType}
                       </p>
                     </div>
                   </div>
                   {document.errorMessage ? (
-                    <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                    <p className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs font-medium text-red-600">
                       {document.errorMessage}
                     </p>
                   ) : null}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 sm:flex-col sm:items-end">
+                <div className="flex flex-wrap items-center gap-3.5 text-sm text-slate-400 sm:flex-col sm:items-end">
                   <span
-                    className={`rounded-lg border px-2 py-1 text-xs font-semibold ${statusStyles[document.status]}`}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-bold ${statusStyles[document.status]}`}
                   >
+                    {document.status === "processing" && (
+                      <span className="size-1.5 rounded-full bg-slate-400 animate-status-pulse" />
+                    )}
+                    {document.status === "ready" && (
+                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                    )}
+                    {document.status === "failed" && (
+                      <span className="size-1.5 rounded-full bg-red-500" />
+                    )}
                     {statusLabels[document.status]}
                   </span>
-                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                    <Clock3 aria-hidden="true" size={16} />
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-400">
+                    <Clock3 aria-hidden="true" size={14} />
                     {dateFormatter.format(new Date(document.createdAt))}
                   </span>
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-slate-600 text-sm">
                     {document.chunkCount} 个片段
                   </span>
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-slate-600 text-sm">
                     {document.extractedMemoryCount} 条记忆
                   </span>
                   <Link
                     href={`/projects/${projectId}/documents/${document.id}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-2.5 py-1 font-semibold text-ink transition-all duration-300 ease-smooth hover:bg-black/[0.02] focus:outline-none text-xs"
                   >
-                    <ExternalLink aria-hidden="true" size={15} />
+                    <ExternalLink aria-hidden="true" size={12} />
                     查看来源
                   </Link>
                 </div>
@@ -238,40 +256,41 @@ export function DocumentsClient({
             ))}
           </div>
         ) : (
-          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-lg border border-dashed border-line bg-white px-6 py-12 text-center shadow-soft">
-            <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-              <FileText aria-hidden="true" size={24} strokeWidth={2} />
+          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-black/[0.08] bg-white px-6 py-12 text-center shadow-card animate-fade-in-up delay-200">
+            <div className="mb-4 flex size-12 items-center justify-center rounded-xl border border-black/[0.06] bg-slate-50 text-slate-500">
+              <FileText aria-hidden="true" size={20} strokeWidth={1.5} />
             </div>
-            <h2 className="text-xl font-semibold tracking-normal text-ink">
+            <h2 className="text-base font-semibold tracking-tight text-ink">
               暂无文档
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-              上传项目笔记、决策记录或会议纪要。
+            <p className="mt-1.5 max-w-xs text-xs leading-5 text-slate-400">
+              上传项目笔记、决策记录或会议纪要，以开启记忆提取。
             </p>
           </div>
         )}
       </section>
 
-      <aside className="min-w-0 h-fit rounded-lg border border-line bg-white p-5 shadow-soft">
-        <form onSubmit={handleUpload} className="space-y-5">
+      {/* 右侧上传文档 */}
+      <aside className="min-w-0 h-fit rounded-xl border border-black/[0.06] bg-white p-6 shadow-card">
+        <form onSubmit={handleUpload} className="space-y-4">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-ink text-white">
-              <UploadCloud aria-hidden="true" size={20} />
+            <span className="flex size-9 items-center justify-center rounded-lg bg-ink text-white">
+              <UploadCloud aria-hidden="true" size={18} />
             </span>
             <div>
-              <h2 className="text-lg font-semibold tracking-normal text-ink">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">
                 上传文档
               </h2>
-              <p className="text-sm text-slate-500">.md 和 .txt 文件</p>
+              <p className="text-xs text-slate-400">支持 .md 和 .txt 文件</p>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label
               htmlFor="document-files"
-              className="text-sm font-medium text-ink"
+              className="text-sm font-semibold text-slate-600"
             >
-              文件
+              文件选择
             </label>
             <input
               key={fileInputKey}
@@ -285,17 +304,17 @@ export function DocumentsClient({
                 setSelectedFileCount(event.currentTarget.files?.length ?? 0)
               }
               disabled={isUploading}
-              className="block min-w-0 w-full rounded-lg border border-line bg-white px-3 py-3 text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-teal-700 hover:file:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-50"
+              className="block min-w-0 w-full rounded-lg border border-black/[0.08] bg-white p-2 text-xs text-ink outline-none transition-all duration-300 focus:border-black/30 focus:ring-2 focus:ring-black/[0.03] file:mr-2 file:rounded-md file:border-0 file:bg-slate-50 file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
-            <p className="text-sm text-slate-500">
+            <p className="text-xs font-medium text-slate-400">
               {selectedFileCount > 0
                 ? `已选择 ${selectedFileCount} 个文件`
-                : "未选择文件"}
+                : "未选择任何文件"}
             </p>
           </div>
 
           {error ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+            <p className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs font-medium text-red-600">
               {error}
             </p>
           ) : null}
@@ -303,10 +322,14 @@ export function DocumentsClient({
           <button
             type="submit"
             disabled={isUploading}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-ink px-4 text-sm font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            <UploadCloud aria-hidden="true" size={18} />
-            {isUploading ? "上传中..." : "上传"}
+            {isUploading ? (
+              <LoaderCircle aria-hidden="true" size={14} className="animate-spin" />
+            ) : (
+              <UploadCloud aria-hidden="true" size={14} />
+            )}
+            {isUploading ? "上传中..." : "上传文件"}
           </button>
         </form>
       </aside>
