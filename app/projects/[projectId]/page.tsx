@@ -419,7 +419,7 @@ export default async function ProjectDetailPage({
           </div>
 
           {/* 右侧边栏最近活动卡片 */}
-          <aside className="sticky top-20 animate-fade-in-up delay-200 rounded-xl border border-black/[0.06] bg-white p-5 shadow-card space-y-4">
+          <aside className="sticky top-20 mt-11 animate-fade-in-up delay-200 rounded-xl border border-black/[0.06] bg-white p-5 shadow-card space-y-4">
             <div className="flex items-center justify-between border-b border-black/[0.04] pb-3.5">
               <div className="flex items-center gap-2">
                 <span className="flex size-8 items-center justify-center rounded-lg bg-slate-50 border border-black/[0.06] text-slate-500">
