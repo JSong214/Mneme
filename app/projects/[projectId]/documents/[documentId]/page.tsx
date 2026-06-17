@@ -155,7 +155,7 @@ export default async function DocumentDetailPage({
           <main className="min-w-0 space-y-6">
             <section
               id="raw"
-              className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft"
+              className="scroll-mt-20 min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft"
             >
               <SectionHeader
                 icon={FileText}
@@ -171,7 +171,7 @@ export default async function DocumentDetailPage({
 
             <section
               id="chunks"
-              className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft"
+              className="scroll-mt-20 min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft"
             >
               <SectionHeader
                 icon={Hash}
@@ -208,7 +208,7 @@ export default async function DocumentDetailPage({
 
             <section
               id="memories"
-              className="min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft"
+              className="scroll-mt-20 min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft"
             >
               <SectionHeader
                 icon={TableProperties}
