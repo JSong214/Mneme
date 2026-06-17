@@ -114,7 +114,7 @@ export default async function DocumentDetailPage({
               <p className="text-sm font-semibold text-teal-700">
                 {project.name}
               </p>
-              <div className="flex min-w-0 items-start gap-3">
+              <div className="flex min-w-0  items-start gap-3">
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                   <FileText aria-hidden="true" size={22} />
                 </span>
@@ -141,6 +141,7 @@ export default async function DocumentDetailPage({
                 icon={TableProperties}
                 label={`${memoryTotal} 条记忆`}
               />
+              <MetaPill icon={FileText} label={document.mimeType} />
             </div>
           </div>
 
@@ -266,28 +267,11 @@ export default async function DocumentDetailPage({
             </section>
           </main>
 
-          <aside className="h-fit min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft lg:sticky lg:top-6">
-            <h2 className="text-lg font-semibold tracking-normal text-ink">
-              来源详情
+          <aside className="hidden lg:block h-fit min-w-0 rounded-lg border border-line bg-white p-5 shadow-soft lg:sticky lg:top-[88px]">
+            <h2 className="text-base font-semibold tracking-normal text-ink">
+              文档导航
             </h2>
-            <dl className="mt-4 space-y-3 text-sm">
-              <DetailRow label="MIME type" value={document.mimeType} />
-              <DetailRow
-                label="创建时间"
-                value={formatDateTime(document.createdAt)}
-              />
-              <DetailRow
-                label="更新时间"
-                value={formatDateTime(document.updatedAt)}
-              />
-              <DetailRow label="片段数" value={String(chunks.length)} />
-              <DetailRow label="记忆数" value={String(memoryTotal)} />
-            </dl>
-
-            <nav aria-label="文档详情导航" className="mt-5 grid gap-2 text-sm">
-              <h3 className="text-base font-semibold tracking-normal text-ink">
-                链接
-              </h3>
+            <nav aria-label="文档详情导航" className="mt-3 grid gap-1 text-sm">
               <a
                 href="#raw"
                 className="rounded-lg px-3 py-2 font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
@@ -509,15 +493,6 @@ function MetaPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
       <Icon aria-hidden="true" size={15} className="shrink-0" />
       <span className="truncate">{label}</span>
     </span>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="font-semibold text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words text-slate-700">{value}</dd>
-    </div>
   );
 }
 
