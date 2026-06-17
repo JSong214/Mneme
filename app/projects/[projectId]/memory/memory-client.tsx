@@ -70,11 +70,11 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric"
 });
 
-// 精细状态标签，去除带彩色背景
+// 精细状态标签，使用柔和背景与边框颜色区分
 const actionStatusStyles: Record<ActionItemStatusDto, string> = {
-  open: "border-black/[0.06] bg-slate-50 text-slate-500",
-  in_progress: "border-black/[0.06] bg-slate-50 text-slate-700",
-  done: "border-black/[0.06] bg-slate-50 text-emerald-600"
+  open: "border-slate-100 bg-slate-50 text-slate-500",
+  in_progress: "border-amber-100 bg-amber-50/30 text-amber-700",
+  done: "border-emerald-100 bg-emerald-50/30 text-emerald-700"
 };
 
 const actionStatusLabels: Record<ActionItemStatusDto, string> = {
@@ -83,17 +83,87 @@ const actionStatusLabels: Record<ActionItemStatusDto, string> = {
   done: "已完成"
 };
 
-// 精细风险严重度样式，去除带色背景
+// 精细风险严重度样式，使用柔和背景与边框颜色区分
 const riskSeverityStyles: Record<RiskSeverityDto, string> = {
-  low: "border-black/[0.06] bg-slate-50 text-emerald-600",
-  medium: "border-black/[0.06] bg-slate-50 text-amber-600",
-  high: "border-black/[0.06] bg-slate-50 text-red-600"
+  low: "border-emerald-100 bg-emerald-50/30 text-emerald-700",
+  medium: "border-amber-100 bg-amber-50/30 text-amber-700",
+  high: "border-red-100 bg-red-50/30 text-red-700"
 };
 
 const riskSeverityLabels: Record<RiskSeverityDto, string> = {
   low: "低风险",
   medium: "中风险",
   high: "高风险"
+};
+
+// 记忆类别四种状态（决策、行动项、待解问题、风险）的主题样式
+const memoryTypeStyles: Record<MemoryTabId, {
+  text: string;
+  bg: string;
+  border: string;
+  badge: string;
+  icon: string;
+}> = {
+  decisions: {
+    text: "text-purple-600",
+    bg: "bg-purple-50/40",
+    border: "border-purple-100/70",
+    badge: "bg-purple-100 text-purple-700",
+    icon: "text-purple-500"
+  },
+  actionItems: {
+    text: "text-blue-600",
+    bg: "bg-blue-50/40",
+    border: "border-blue-100/70",
+    badge: "bg-blue-100 text-blue-700",
+    icon: "text-blue-500"
+  },
+  openQuestions: {
+    text: "text-amber-600",
+    bg: "bg-amber-50/40",
+    border: "border-amber-100/70",
+    badge: "bg-amber-100 text-amber-700",
+    icon: "text-amber-500"
+  },
+  risks: {
+    text: "text-red-600",
+    bg: "bg-red-50/40",
+    border: "border-red-100/70",
+    badge: "bg-red-100 text-red-700",
+    icon: "text-red-500"
+  }
+};
+
+const memoryTabStyles: Record<MemoryTabId, {
+  active: string;
+  activeBadge: string;
+  inactiveHover: string;
+  iconActive: string;
+}> = {
+  decisions: {
+    active: "bg-purple-50 text-purple-700 border border-purple-100 shadow-sm",
+    activeBadge: "bg-purple-100/80 text-purple-700",
+    inactiveHover: "hover:bg-purple-50/30 hover:text-purple-700",
+    iconActive: "text-purple-600"
+  },
+  actionItems: {
+    active: "bg-blue-50 text-blue-700 border border-blue-100 shadow-sm",
+    activeBadge: "bg-blue-100/80 text-blue-700",
+    inactiveHover: "hover:bg-blue-50/30 hover:text-blue-700",
+    iconActive: "text-blue-600"
+  },
+  openQuestions: {
+    active: "bg-amber-50 text-amber-700 border border-amber-100 shadow-sm",
+    activeBadge: "bg-amber-100/80 text-amber-700",
+    inactiveHover: "hover:bg-amber-50/30 hover:text-amber-700",
+    iconActive: "text-amber-600"
+  },
+  risks: {
+    active: "bg-red-50 text-red-700 border border-red-100 shadow-sm",
+    activeBadge: "bg-red-100/80 text-red-700",
+    inactiveHover: "hover:bg-red-50/30 hover:text-red-700",
+    iconActive: "text-red-600"
+  }
 };
 
 /**
@@ -109,28 +179,28 @@ export function MemoryClient({
 
   const summaryItems = [
     {
+      id: "decisions" as const,
       label: "决策",
       value: initialSummary.decisions,
-      icon: Lightbulb,
-      className: "border-black/[0.06] bg-white text-ink"
+      icon: Lightbulb
     },
     {
+      id: "actionItems" as const,
       label: "行动项",
       value: initialSummary.actionItems,
-      icon: ClipboardList,
-      className: "border-black/[0.06] bg-white text-ink"
+      icon: ClipboardList
     },
     {
+      id: "openQuestions" as const,
       label: "待解问题",
       value: initialSummary.openQuestions,
-      icon: CircleHelp,
-      className: "border-black/[0.06] bg-white text-ink"
+      icon: CircleHelp
     },
     {
+      id: "risks" as const,
       label: "风险",
       value: initialSummary.risks,
-      icon: ShieldAlert,
-      className: "border-black/[0.06] bg-white text-ink"
+      icon: ShieldAlert
     }
   ];
 
@@ -156,18 +226,19 @@ export function MemoryClient({
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map((item, index) => {
           const Icon = item.icon;
+          const style = memoryTypeStyles[item.id];
 
           return (
             <div
               key={item.label}
               style={{ animationDelay: `${index * 60}ms` }}
-              className={`animate-fade-in-up rounded-xl border p-5 shadow-card ${item.className}`}
+              className={`animate-fade-in-up rounded-xl border p-5 shadow-card bg-white transition-all duration-300 ${style.border}`}
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="text-xs font-semibold text-slate-400">{item.label}</span>
-                <Icon aria-hidden="true" size={14} className="text-slate-400" />
+                <Icon aria-hidden="true" size={14} className={style.icon} />
               </div>
-              <p className="mt-2 text-2xl font-bold tracking-tight text-ink">
+              <p className={`mt-2 text-2xl font-bold tracking-tight ${style.text}`}>
                 {item.value}
               </p>
             </div>
@@ -187,6 +258,7 @@ export function MemoryClient({
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               const count = initialSummary[tab.id];
+              const styles = memoryTabStyles[tab.id];
 
               return (
                 <button
@@ -195,19 +267,19 @@ export function MemoryClient({
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex min-w-0 items-center justify-between gap-3 rounded-lg px-4 py-2.5 text-left text-xs font-semibold transition-all duration-300 ease-smooth focus:outline-none focus:ring-1 focus:ring-black/20 ${
+                  className={`flex min-w-0 items-center justify-between gap-3 rounded-lg px-4 py-2.5 text-left text-xs font-semibold transition-all duration-300 ease-smooth outline-none focus:outline-none focus:ring-0 active:scale-[0.97] active:duration-75 ${
                     isActive
-                      ? "bg-ink text-white shadow-card"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-ink"
+                      ? styles.active
+                      : `text-slate-500 border border-transparent ${styles.inactiveHover}`
                   }`}
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <Icon aria-hidden="true" size={14} className="shrink-0" />
+                    <Icon aria-hidden="true" size={14} className={`shrink-0 ${isActive ? styles.iconActive : ""}`} />
                     <span className="truncate">{tab.label}</span>
                   </span>
                   <span
-                    className={`rounded px-1.5 py-0.5 text-xs font-bold ${
-                      isActive ? "bg-white/15 text-white" : "bg-slate-100 text-slate-500"
+                    className={`rounded px-1.5 py-0.5 text-xs font-bold transition-all duration-300 ${
+                      isActive ? styles.activeBadge : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {count}
@@ -293,7 +365,7 @@ function DecisionCard({ decision, index }: { decision: DecisionMemoryDto; index:
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex min-w-0 items-start gap-3">
-            <MemoryIcon icon={Lightbulb} />
+            <MemoryIcon icon={Lightbulb} type="decisions" />
             <div className="min-w-0 space-y-1">
               <h2 className="break-words text-base font-semibold tracking-tight text-ink">
                 {decision.title}
@@ -349,7 +421,7 @@ function ActionItemCard({
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex min-w-0 items-start gap-3">
-            <MemoryIcon icon={ClipboardList} />
+            <MemoryIcon icon={ClipboardList} type="actionItems" />
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="break-words text-base font-semibold tracking-tight text-ink">
@@ -408,7 +480,7 @@ function OpenQuestionCard({
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex min-w-0 items-start gap-3">
-            <MemoryIcon icon={CircleHelp} />
+            <MemoryIcon icon={CircleHelp} type="openQuestions" />
             <div className="min-w-0 space-y-1">
               <h2 className="break-words text-base font-semibold tracking-tight text-ink">
                 {openQuestion.question}
@@ -447,7 +519,7 @@ function RiskCard({ risk, index }: { risk: RiskMemoryDto; index: number }) {
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex min-w-0 items-start gap-3">
-            <MemoryIcon icon={ShieldAlert} />
+            <MemoryIcon icon={ShieldAlert} type="risks" />
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="break-words text-base font-semibold tracking-tight text-ink">
@@ -481,9 +553,15 @@ function RiskCard({ risk, index }: { risk: RiskMemoryDto; index: number }) {
   );
 }
 
-function MemoryIcon({ icon: Icon }: { icon: typeof Lightbulb }) {
+function MemoryIcon({ icon: Icon, type }: { icon: typeof Lightbulb; type: MemoryTabId }) {
+  const iconColors: Record<MemoryTabId, string> = {
+    decisions: "text-purple-600 bg-purple-50 border-purple-100/50",
+    actionItems: "text-blue-600 bg-blue-50 border-blue-100/50",
+    openQuestions: "text-amber-600 bg-amber-50 border-amber-100/50",
+    risks: "text-red-600 bg-red-50 border-red-100/50"
+  };
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-black/[0.06] bg-slate-50 text-slate-500">
+    <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg border ${iconColors[type]}`}>
       <Icon aria-hidden="true" size={15} strokeWidth={2} />
     </span>
   );

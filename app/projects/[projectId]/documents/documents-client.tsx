@@ -44,11 +44,11 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   minute: "2-digit"
 });
 
-// 精细小徽章边框样式，去除带彩色背景
+// 精细状态标签样式，使用柔和背景与边框颜色区分
 const statusStyles: Record<DocumentStatusDto, string> = {
-  processing: "border-black/[0.06] bg-slate-50 text-slate-500",
-  ready: "border-black/[0.06] bg-slate-50 text-slate-800",
-  failed: "border-black/[0.06] bg-slate-50 text-red-600"
+  processing: "border-blue-100 bg-blue-50/30 text-blue-700",
+  ready: "border-emerald-100 bg-emerald-50/30 text-emerald-700",
+  failed: "border-red-100 bg-red-50/30 text-red-700"
 };
 
 const statusLabels: Record<DocumentStatusDto, string> = {
@@ -120,30 +120,53 @@ export function DocumentsClient({
     }
   }
 
+  const documentSummaryStyles = {
+    total: {
+      border: "border-indigo-100/70",
+      text: "text-indigo-600",
+      icon: "text-indigo-500"
+    },
+    ready: {
+      border: "border-emerald-100/70",
+      text: "text-emerald-600",
+      icon: "text-emerald-500"
+    },
+    processing: {
+      border: "border-blue-100/70",
+      text: "text-blue-600",
+      icon: "text-blue-500"
+    },
+    failed: {
+      border: "border-red-100/70",
+      text: "text-red-600",
+      icon: "text-red-500"
+    }
+  };
+
   const summaryItems = [
     {
+      id: "total" as const,
       label: "总数",
       value: summary.total,
-      icon: Files,
-      className: "border-black/[0.06] bg-white text-ink"
+      icon: Files
     },
     {
+      id: "ready" as const,
       label: "可用",
       value: summary.ready,
-      icon: CheckCircle2,
-      className: "border-black/[0.06] bg-white text-slate-700"
+      icon: CheckCircle2
     },
     {
+      id: "processing" as const,
       label: "处理中",
       value: summary.processing,
-      icon: LoaderCircle,
-      className: "border-black/[0.06] bg-white text-slate-700"
+      icon: LoaderCircle
     },
     {
+      id: "failed" as const,
       label: "失败",
       value: summary.failed,
-      icon: AlertTriangle,
-      className: "border-black/[0.06] bg-white text-red-600"
+      icon: AlertTriangle
     }
   ];
 
@@ -170,18 +193,23 @@ export function DocumentsClient({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {summaryItems.map((item, index) => {
             const Icon = item.icon;
+            const style = documentSummaryStyles[item.id];
 
             return (
               <div
                 key={item.label}
                 style={{ animationDelay: `${index * 60}ms` }}
-                className={`animate-fade-in-up rounded-xl border p-5 shadow-card ${item.className}`}
+                className={`animate-fade-in-up rounded-xl border p-5 shadow-card bg-white transition-all duration-300 ${style.border}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-slate-400">{item.label}</span>
-                  <Icon aria-hidden="true" size={14} className="text-slate-400" />
+                  <Icon
+                    aria-hidden="true"
+                    size={14}
+                    className={`${style.icon} ${item.id === "processing" && item.value > 0 ? "animate-spin" : ""}`}
+                  />
                 </div>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-ink">
+                <p className={`mt-2 text-2xl font-bold tracking-tight ${style.text}`}>
                   {item.value}
                 </p>
               </div>
@@ -224,7 +252,7 @@ export function DocumentsClient({
                     className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-bold ${statusStyles[document.status]}`}
                   >
                     {document.status === "processing" && (
-                      <span className="size-1.5 rounded-full bg-slate-400 animate-status-pulse" />
+                      <span className="size-1.5 rounded-full bg-blue-500 animate-status-pulse" />
                     )}
                     {document.status === "ready" && (
                       <span className="size-1.5 rounded-full bg-emerald-500" />
