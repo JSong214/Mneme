@@ -21,9 +21,23 @@ export type RetrievedChunk = {
   createdAt: string;
 };
 
+export type RetrievalMode = "baseline" | "rerank";
+
+export type RetrievalMetrics = {
+  mode: RetrievalMode;
+  candidateCount: number;
+  returnedCount: number;
+  averageDistance: number | null;
+  rerankApplied: boolean;
+  lexicalMatchedChunks: number;
+  topCandidateDistance: number | null;
+  topReturnedDistance: number | null;
+};
+
 export type RetrievedProjectContext = {
   chunks: RetrievedChunk[];
   memories: ProjectMemoryGroupsDto;
+  retrievalMetrics: RetrievalMetrics;
 };
 
 type RetrievedChunkRow = {
@@ -38,6 +52,7 @@ type RetrievedChunkRow = {
 };
 
 const TOP_CHUNK_LIMIT = 6;
+const RERANK_CANDIDATE_LIMIT = 12;
 const MEMORY_RESULT_LIMIT = 5;
 const MAX_MEMORY_SEARCH_TERMS = 8;
 const memoryDocumentSelect = {
@@ -63,28 +78,40 @@ const ignoredSearchTerms = new Set([
   "is"
 ]);
 
-// 组装 Ask 所需的混合检索上下文：向量片段 + 结构化项目记忆。
+// 组装 Ask/Eval 所需的混合检索上下文：向量片段 + 结构化项目记忆。
 export async function retrieveProjectContext(
   projectId: string,
-  question: string
+  question: string,
+  options: {
+    retrievalMode?: RetrievalMode;
+  } = {}
 ): Promise<RetrievedProjectContext> {
+  const retrievalMode = options.retrievalMode ?? "baseline";
   const [queryEmbedding] = await createEmbeddings([question]);
-  const [chunks, memories] = await Promise.all([
-    retrieveRelevantChunks(projectId, queryEmbedding),
+  const [chunkResult, memories] = await Promise.all([
+    retrieveRelevantChunks(projectId, queryEmbedding, question, retrievalMode),
     lookupStructuredMemories(projectId, question)
   ]);
 
   return {
-    chunks,
-    memories
+    chunks: chunkResult.chunks,
+    memories,
+    retrievalMetrics: chunkResult.metrics
   };
 }
 
 async function retrieveRelevantChunks(
   projectId: string,
-  queryEmbedding: number[]
-): Promise<RetrievedChunk[]> {
+  queryEmbedding: number[],
+  question: string,
+  retrievalMode: RetrievalMode
+): Promise<{
+  chunks: RetrievedChunk[];
+  metrics: RetrievalMetrics;
+}> {
   const queryVector = toPgVector(queryEmbedding);
+  const candidateLimit =
+    retrievalMode === "rerank" ? RERANK_CANDIDATE_LIMIT : TOP_CHUNK_LIMIT;
   const rows = await prisma.$queryRaw<RetrievedChunkRow[]>`
     SELECT
       c."id",
@@ -99,13 +126,22 @@ async function retrieveRelevantChunks(
     INNER JOIN "documents" d ON d."id" = c."documentId"
     WHERE c."projectId" = ${projectId}
     ORDER BY c."embedding" <=> ${queryVector}::vector
-    LIMIT ${TOP_CHUNK_LIMIT}
+    LIMIT ${candidateLimit}
   `;
 
-  return rows.map((row) => ({
+  const candidates = rows.map((row) => ({
     ...row,
     createdAt: row.createdAt.toISOString()
   }));
+  const chunks =
+    retrievalMode === "rerank"
+      ? rerankChunks(candidates, question).slice(0, TOP_CHUNK_LIMIT)
+      : candidates.slice(0, TOP_CHUNK_LIMIT);
+
+  return {
+    chunks,
+    metrics: buildRetrievalMetrics(retrievalMode, candidates, chunks, question)
+  };
 }
 
 async function lookupStructuredMemories(
@@ -403,4 +439,71 @@ function buildQuestionTerms(question: string): string[] {
   }
 
   return [...terms];
+}
+
+function buildLexicalTerms(question: string): string[] {
+  return buildQuestionTerms(question)
+    .filter((term) => !term.includes(" "))
+    .map((term) => term.toLowerCase());
+}
+
+// 轻量 rerank：先取更多向量候选，再用问题关键词覆盖度调整排序。
+function rerankChunks(chunks: RetrievedChunk[], question: string): RetrievedChunk[] {
+  const terms = buildLexicalTerms(question);
+
+  if (terms.length === 0) {
+    return chunks;
+  }
+
+  return chunks
+    .map((chunk, index) => {
+      const searchableText = `${chunk.fileName}\n${chunk.content}`.toLowerCase();
+      const matchedTerms = terms.filter((term) => searchableText.includes(term));
+      const lexicalScore = matchedTerms.length / terms.length;
+      const vectorScore = 1 / (1 + Math.max(chunk.distance, 0));
+
+      return {
+        chunk,
+        index,
+        score: vectorScore * 0.75 + lexicalScore * 0.25
+      };
+    })
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .map((item) => item.chunk);
+}
+
+function buildRetrievalMetrics(
+  mode: RetrievalMode,
+  candidates: RetrievedChunk[],
+  chunks: RetrievedChunk[],
+  question: string
+): RetrievalMetrics {
+  const terms = buildLexicalTerms(question);
+  const averageDistance =
+    candidates.length === 0
+      ? null
+      : Math.round(
+          (candidates.reduce((total, chunk) => total + chunk.distance, 0) /
+            candidates.length) *
+            10000
+        ) / 10000;
+  const lexicalMatchedChunks =
+    terms.length === 0
+      ? 0
+      : candidates.filter((chunk) => {
+          const searchableText = `${chunk.fileName}\n${chunk.content}`.toLowerCase();
+
+          return terms.some((term) => searchableText.includes(term));
+        }).length;
+
+  return {
+    mode,
+    candidateCount: candidates.length,
+    returnedCount: chunks.length,
+    averageDistance,
+    rerankApplied: mode === "rerank",
+    lexicalMatchedChunks,
+    topCandidateDistance: candidates[0]?.distance ?? null,
+    topReturnedDistance: chunks[0]?.distance ?? null
+  };
 }

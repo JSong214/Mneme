@@ -15,11 +15,12 @@ import {
   Send,
   Sparkles,
   TableProperties,
+  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { MAX_ASK_QUESTION_LENGTH } from "@/lib/ask/constants";
 import type { AskConfidence } from "@/lib/ask/schemas";
-import type { AskRunDto } from "@/lib/ask/types";
+import type { AskRunDto, ProjectAskRunsDto } from "@/lib/ask/types";
 import type { DocumentDto } from "@/lib/documents/types";
 
 type AskClientProps = {
@@ -35,6 +36,15 @@ type ApiAskResponse =
   | {
       run: AskRunDto;
     }
+  | {
+      error: {
+        code: string;
+        message: string;
+      };
+    };
+
+type ApiDeleteAskRunResponse =
+  | ProjectAskRunsDto
   | {
       error: {
         code: string;
@@ -80,7 +90,9 @@ export function AskClient({
   );
   const [question, setQuestion] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
   const selectedRun =
     runs.find((run) => run.id === selectedRunId) ?? runs[0] ?? null;
 
@@ -136,6 +148,55 @@ export function AskClient({
       setError("无法回答该问题。");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteRun(run: AskRunDto) {
+    setHistoryError(null);
+
+    const confirmed = window.confirm(
+      [
+        "确定要永久删除这条问答记录吗？",
+        `问题：${run.question}`,
+        "该操作只删除这次历史记录，不会删除原始文档。"
+      ].join("\n\n")
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingRunId(run.id);
+
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/ask/runs/${run.id}`,
+        {
+          method: "DELETE"
+        }
+      );
+      const payload = (await response.json()) as ApiDeleteAskRunResponse;
+
+      if (!response.ok || "error" in payload) {
+        setHistoryError(
+          "error" in payload ? payload.error.message : "无法删除问答记录。"
+        );
+        return;
+      }
+
+      setRuns(payload.runs);
+      setSelectedRunId((currentSelectedRunId) => {
+        if (currentSelectedRunId === run.id) {
+          return payload.runs[0]?.id ?? null;
+        }
+
+        return currentSelectedRunId;
+      });
+      router.refresh();
+    } catch {
+      setHistoryError("无法删除问答记录。");
+    } finally {
+      setDeletingRunId(null);
     }
   }
 
@@ -253,34 +314,61 @@ export function AskClient({
           </div>
         </div>
 
+        {historyError ? (
+          <p className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs font-medium text-red-600">
+            {historyError}
+          </p>
+        ) : null}
+
         {runs.length > 0 ? (
           <div className="grid gap-2">
             {runs.map((run) => {
               const isSelected = run.id === selectedRun?.id;
 
               return (
-                <button
+                <div
                   key={run.id}
-                  type="button"
-                  onClick={() => setSelectedRunId(run.id)}
-                  className={`min-w-0 rounded-xl border p-3 text-left transition-all duration-300 ease-smooth focus:outline-none focus:ring-1 focus:ring-black/20 ${
+                  className={`flex min-w-0 items-start gap-2 rounded-xl border p-2 transition-all duration-300 ease-smooth ${
                     isSelected
                       ? "border-black/20 bg-slate-50"
                       : "border-black/[0.06] bg-white hover:bg-slate-50/70"
                   }`}
                 >
-                  <span className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
-                    {run.question}
-                  </span>
-                  <span className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-bold ${confidenceStyles[run.answer.confidence]}`}
-                    >
-                      置信度 {confidenceLabels[run.answer.confidence]}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRunId(run.id)}
+                    className="min-w-0 flex-1 rounded-lg px-1 py-1 text-left focus:outline-none focus:ring-1 focus:ring-black/20"
+                  >
+                    <span className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
+                      {run.question}
                     </span>
-                    <span>{formatDateTime(run.createdAt)}</span>
-                  </span>
-                </button>
+                    <span className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-bold ${confidenceStyles[run.answer.confidence]}`}
+                      >
+                        置信度 {confidenceLabels[run.answer.confidence]}
+                      </span>
+                      <span>{formatDateTime(run.createdAt)}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="删除问答记录"
+                    onClick={() => handleDeleteRun(run)}
+                    disabled={deletingRunId === run.id}
+                    className="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-red-100 bg-white text-red-500 transition-all duration-300 hover:bg-red-50 focus:outline-none focus:ring-1 focus:ring-red-200 disabled:cursor-not-allowed disabled:text-slate-300"
+                  >
+                    {deletingRunId === run.id ? (
+                      <LoaderCircle
+                        aria-hidden="true"
+                        size={14}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <Trash2 aria-hidden="true" size={14} />
+                    )}
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -413,7 +501,10 @@ function EvidenceCard({
   projectId: string;
   sourceDocument?: AskSourceDocument;
 }) {
-  const sourceDocumentId = sourceDocument?.id ?? evidence.documentId;
+  const hasDeletedSource = Boolean(evidence.documentId && !sourceDocument);
+  const sourceDocumentId = hasDeletedSource
+    ? null
+    : sourceDocument?.id ?? evidence.documentId;
   const chunkIndex = evidence.chunkIndex;
   const hasChunkTarget = typeof chunkIndex === "number";
   const sourceHref = sourceDocumentId
@@ -437,6 +528,11 @@ function EvidenceCard({
             </span>
           )}
         </div>
+        {hasDeletedSource ? (
+          <span className="inline-flex items-center rounded-lg border border-red-100 bg-red-50/60 px-2 py-1 text-xs font-semibold text-red-600">
+            来源文档已删除
+          </span>
+        ) : null}
         {sourceHref && (
           <Link
             href={sourceHref}
@@ -523,11 +619,13 @@ function findEvidenceSourceDocument(
   evidence: AskRunDto["answer"]["evidence"][number],
   sourceDocuments: AskSourceDocument[],
 ) {
-  const match = sourceDocuments.find(
+  if (evidence.documentId) {
+    return sourceDocuments.find((doc) => doc.id === evidence.documentId);
+  }
+
+  return sourceDocuments.find(
     (doc) => doc.fileName.toLowerCase() === evidence.file.toLowerCase(),
   );
-
-  return match;
 }
 
 function toUserFacingError(code: string, fallbackMessage: string) {

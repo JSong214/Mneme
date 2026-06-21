@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
+  BarChart3,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   FileSearch,
   Gauge,
   LoaderCircle,
@@ -21,11 +24,13 @@ import {
   MAX_EVAL_CASE_QUESTION_LENGTH,
   MAX_EVAL_LIST_ITEM_LENGTH,
 } from "@/lib/eval/constants";
-import type {
-  EvalCaseDto,
-  EvalRunDto,
-  EvalRunMutationDto,
-  EvalSummaryDto,
+import {
+  retrievalModeLabels,
+  type EvalCaseDto,
+  type EvalRunDto,
+  type EvalRunMutationDto,
+  type EvalSummaryDto,
+  type RetrievalModeDto,
 } from "@/lib/eval/types";
 
 type EvalClientProps = {
@@ -51,6 +56,8 @@ type ApiErrorResponse = {
   };
 };
 
+const retrievalModes: RetrievalModeDto[] = ["baseline", "rerank"];
+
 const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "short",
   day: "numeric",
@@ -65,7 +72,6 @@ const confidenceLabels = {
   low: "低",
 } as const;
 
-// 置信度精细小徽章样式，无多彩背景
 const confidenceStyles = {
   high: "border-black/[0.06] bg-slate-50 text-slate-700",
   medium: "border-black/[0.06] bg-slate-50 text-slate-700",
@@ -74,7 +80,7 @@ const confidenceStyles = {
 
 /**
  * 评估模块客户端组件
- * 支持新增测试用例（包括评估问题、期望数据来源及预期事实），批量及单次执行问答评估，并查看多维评估结果（依据分、命中率等）。
+ * 支持新增测试用例、按 retrieval mode 运行评估，并查看来源命中诊断。
  */
 export function EvalClient({
   projectId,
@@ -85,6 +91,8 @@ export function EvalClient({
   const router = useRouter();
   const [cases, setCases] = useState(initialCases);
   const [summary, setSummary] = useState(initialSummary);
+  const [retrievalMode, setRetrievalMode] =
+    useState<RetrievalModeDto>("baseline");
   const [question, setQuestion] = useState("");
   const [expectedSources, setExpectedSources] = useState("");
   const [expectedFacts, setExpectedFacts] = useState("");
@@ -154,7 +162,7 @@ export function EvalClient({
     setRunningCaseId(evalCaseId);
 
     try {
-      const payload = await requestEvalRun({ evalCaseId });
+      const payload = await requestEvalRun({ evalCaseId, retrievalMode });
 
       applyEvalRuns(payload.runs, payload.summary);
       router.refresh();
@@ -172,7 +180,7 @@ export function EvalClient({
     setIsRunningAll(true);
 
     try {
-      const payload = await requestEvalRun({});
+      const payload = await requestEvalRun({ retrievalMode });
 
       applyEvalRuns(payload.runs, payload.summary);
       router.refresh();
@@ -185,7 +193,10 @@ export function EvalClient({
     }
   }
 
-  async function requestEvalRun(body: { evalCaseId?: string }) {
+  async function requestEvalRun(body: {
+    evalCaseId?: string;
+    retrievalMode: RetrievalModeDto;
+  }) {
     const response = await fetch(`/api/projects/${projectId}/eval/run`, {
       method: "POST",
       headers: {
@@ -211,9 +222,23 @@ export function EvalClient({
 
     setCases((currentCases) =>
       currentCases.map((evalCase) => {
-        const latestRun = runsByCaseId.get(evalCase.id);
+        const newRun = runsByCaseId.get(evalCase.id);
 
-        return latestRun ? { ...evalCase, latestRun } : evalCase;
+        if (!newRun) {
+          return evalCase;
+        }
+
+        const latestRunsByMode = {
+          ...evalCase.latestRunsByMode,
+          [newRun.retrievalMode]: newRun,
+        };
+        const latestRun = pickLatestRun(Object.values(latestRunsByMode));
+
+        return {
+          ...evalCase,
+          latestRun,
+          latestRunsByMode,
+        };
       }),
     );
     setSummary(nextSummary);
@@ -248,7 +273,6 @@ export function EvalClient({
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-      {/* 测评数据面板 */}
       <section className="min-w-0 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 space-y-2">
@@ -260,26 +284,33 @@ export function EvalClient({
               固定问题集用于检查系统能不能找到正确依据，并基于依据回答问题。
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleRunAll}
-            disabled={isRunningAll || cases.length === 0}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {isRunningAll ? (
-              <LoaderCircle
-                aria-hidden="true"
-                size={14}
-                className="animate-spin"
-              />
-            ) : (
-              <Play aria-hidden="true" size={14} />
-            )}
-            {isRunningAll ? "运行中..." : "运行全部用例"}
-          </button>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <RetrievalModeControl
+              value={retrievalMode}
+              onChange={setRetrievalMode}
+            />
+            <button
+              type="button"
+              onClick={handleRunAll}
+              disabled={isRunningAll || cases.length === 0}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {isRunningAll ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  size={14}
+                  className="animate-spin"
+                />
+              ) : (
+                <Play aria-hidden="true" size={14} />
+              )}
+              {isRunningAll
+                ? "运行中..."
+                : `运行全部 ${retrievalModeLabels[retrievalMode]}`}
+            </button>
+          </div>
         </div>
 
-        {/* 顶部统计项 */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {summaryItems.map((item, index) => {
             const Icon = item.icon;
@@ -302,6 +333,8 @@ export function EvalClient({
           })}
         </div>
 
+        <ModeComparison summary={summary} />
+
         {summary.latestRunAt ? (
           <p className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.06] bg-white px-3 py-1.5 text-xs text-slate-500 shadow-card animate-fade-in-up delay-75">
             <Clock3 aria-hidden="true" size={13} className="text-slate-400" />
@@ -315,13 +348,14 @@ export function EvalClient({
           </p>
         ) : null}
 
-        {/* 评估用例列表 */}
         {cases.length > 0 ? (
           <div className="grid gap-4 animate-fade-in-up delay-150">
             {cases.map((evalCase, index) => (
               <EvalCaseCard
                 key={evalCase.id}
+                projectId={projectId}
                 evalCase={evalCase}
+                activeMode={retrievalMode}
                 isRunning={runningCaseId === evalCase.id}
                 onRun={() => handleRunCase(evalCase.id)}
                 index={index}
@@ -333,7 +367,6 @@ export function EvalClient({
         )}
       </section>
 
-      {/* 右侧新增用例表单 */}
       <aside className="h-fit min-w-0 rounded-xl border border-black/[0.06] bg-white p-6 shadow-card">
         <form onSubmit={handleCreateCase} className="space-y-4">
           <div className="flex items-center gap-3">
@@ -405,18 +438,108 @@ export function EvalClient({
   );
 }
 
+function RetrievalModeControl({
+  value,
+  onChange,
+}: {
+  value: RetrievalModeDto;
+  onChange: (mode: RetrievalModeDto) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-1 rounded-lg border border-black/[0.06] bg-white p-1 text-xs font-semibold shadow-card">
+      {retrievalModes.map((mode) => {
+        const isActive = value === mode;
+
+        return (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => onChange(mode)}
+            className={`rounded-md px-3 py-1.5 transition-all duration-300 ${
+              isActive
+                ? "bg-ink text-white"
+                : "text-slate-500 hover:bg-slate-50 hover:text-ink"
+            }`}
+          >
+            {retrievalModeLabels[mode]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ModeComparison({ summary }: { summary: EvalSummaryDto }) {
+  return (
+    <section className="grid gap-3 md:grid-cols-2 animate-fade-in-up delay-100">
+      {retrievalModes.map((mode) => {
+        const modeSummary = summary.modeSummaries[mode];
+
+        return (
+          <article
+            key={mode}
+            className="rounded-xl border border-black/[0.06] bg-white p-4 shadow-card"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-lg border border-black/[0.06] bg-slate-50 text-slate-500">
+                  <BarChart3 aria-hidden="true" size={14} />
+                </span>
+                <h2 className="text-sm font-semibold tracking-tight text-ink">
+                  {retrievalModeLabels[mode]}
+                </h2>
+              </div>
+              <span className="rounded-lg border border-black/[0.06] bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-500">
+                {modeSummary.casesWithRuns}/{modeSummary.totalCases}
+              </span>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+              <ModeStat label="命中" value={modeSummary.sourceMatches} />
+              <ModeStat
+                label="依据分"
+                value={modeSummary.averageGroundednessScore ?? "未评"}
+              />
+              <ModeStat
+                label="延迟"
+                value={
+                  modeSummary.averageLatencyMs === null
+                    ? "暂无"
+                    : `${modeSummary.averageLatencyMs}ms`
+                }
+              />
+            </div>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
+function ModeStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-black/[0.04] bg-slate-50/50 px-2 py-2">
+      <p className="font-semibold text-slate-400">{label}</p>
+      <p className="mt-1 font-bold text-ink">{value}</p>
+    </div>
+  );
+}
+
 function EvalCaseCard({
+  projectId,
   evalCase,
+  activeMode,
   isRunning,
   onRun,
   index
 }: {
+  projectId: string;
   evalCase: EvalCaseDto;
+  activeMode: RetrievalModeDto;
   isRunning: boolean;
   onRun: () => void;
   index: number;
 }) {
-  const latestRun = evalCase.latestRun;
+  const activeRun = evalCase.latestRunsByMode[activeMode];
 
   return (
     <article
@@ -443,28 +566,30 @@ function EvalCaseCard({
             <ExpectedList label="目标来源" items={evalCase.expectedSources} />
             <ExpectedList label="预期覆盖事实" items={evalCase.expectedFacts} />
           </div>
+          <CaseModeComparison evalCase={evalCase} />
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs font-semibold lg:max-w-64 lg:flex-col lg:items-end">
-          {latestRun ? (
+          {activeRun ? (
             <>
-              <SourceMatchPill sourceMatch={latestRun.sourceMatch} />
+              <RetrievalModePill mode={activeRun.retrievalMode} />
+              <SourceMatchPill run={activeRun} />
               <MetaPill
                 icon={Gauge}
-                label={`依据分 ${latestRun.groundednessScore}/5`}
+                label={`依据分 ${activeRun.groundednessScore}/5`}
               />
-              <MetaPill icon={Clock3} label={`${latestRun.latencyMs} ms`} />
+              <MetaPill icon={Clock3} label={`${activeRun.latencyMs} ms`} />
             </>
           ) : (
             <span className="rounded-lg border border-black/[0.06] bg-slate-50 px-2.5 py-0.5 font-bold text-slate-500">
-              未运行
+              {retrievalModeLabels[activeMode]} 未运行
             </span>
           )}
           <button
             type="button"
             onClick={onRun}
             disabled={isRunning}
-            className="inline-flex h-9 w-20 items-center justify-center gap-1 rounded-lg bg-ink px-3 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="inline-flex h-9 w-28 items-center justify-center gap-1 rounded-lg bg-ink px-3 text-xs font-semibold text-white transition-all duration-300 ease-smooth hover:bg-black/85 focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {isRunning ? (
               <LoaderCircle
@@ -475,20 +600,62 @@ function EvalCaseCard({
             ) : (
               <Play aria-hidden="true" size={12} />
             )}
-            {isRunning ? "进行中" : "运行"}
+            {isRunning ? "进行中" : `运行 ${retrievalModeLabels[activeMode]}`}
           </button>
         </div>
       </div>
 
-      {latestRun ? <EvalRunPanel run={latestRun} /> : null}
+      {activeRun ? <EvalRunPanel projectId={projectId} run={activeRun} /> : null}
     </article>
   );
 }
 
-function EvalRunPanel({ run }: { run: EvalRunDto }) {
+function CaseModeComparison({ evalCase }: { evalCase: EvalCaseDto }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {retrievalModes.map((mode) => {
+        const run = evalCase.latestRunsByMode[mode];
+
+        return (
+          <div
+            key={mode}
+            className="rounded-lg border border-black/[0.05] bg-slate-50/40 px-3 py-2 text-xs"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-slate-600">
+                {retrievalModeLabels[mode]}
+              </span>
+              {run ? (
+                <span className="font-semibold text-slate-400">
+                  {formatDateTime(run.createdAt)}
+                </span>
+              ) : (
+                <span className="font-semibold text-slate-400">未运行</span>
+              )}
+            </div>
+            {run ? (
+              <div className="mt-2 flex flex-wrap gap-1.5 font-semibold text-slate-500">
+                <span>{run.sourceMatch ? "来源命中" : "来源缺失"}</span>
+                <span>依据 {run.groundednessScore}/5</span>
+                <span>{run.latencyMs} ms</span>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EvalRunPanel({
+  projectId,
+  run,
+}: {
+  projectId: string;
+  run: EvalRunDto;
+}) {
   return (
     <section className="mt-5 space-y-5 border-t border-black/[0.05] pt-5">
-      {/* 结果数据指标面板，脱色处理，去除非必要红绿背景，改用素净无渐变卡片 */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <ResultStat
           icon={run.sourceMatch ? CheckCircle2 : XCircle}
@@ -514,11 +681,13 @@ function EvalRunPanel({ run }: { run: EvalRunDto }) {
         />
         <ResultStat
           icon={Radar}
-          label="评估 Token"
-          value={formatTokenUsage(run.tokenUsage)}
+          label="候选片段"
+          value={formatRetrievalMetrics(run)}
           className="border-black/[0.06] bg-slate-50 text-slate-500"
         />
       </div>
+
+      <SourceDiagnostics run={run} />
 
       <div className="space-y-2">
         <SectionTitle icon={Quote} label="生成答案" />
@@ -542,12 +711,25 @@ function EvalRunPanel({ run }: { run: EvalRunDto }) {
                   <MetaPill icon={FileSearch} label={source.fileName} />
                   <MetaPill
                     icon={Target}
-                    label={`chunk ${source.chunkIndex}`}
+                    label={`chunk ${source.chunkIndex + 1}`}
                   />
                   <MetaPill
                     icon={Gauge}
                     label={`distance ${source.distance.toFixed(4)}`}
                   />
+                  {source.matchesExpectedSource ? (
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-100 bg-emerald-50/40 px-2.5 py-0.5 font-bold text-emerald-700">
+                      <CheckCircle2 aria-hidden="true" size={12} />
+                      目标来源
+                    </span>
+                  ) : null}
+                  <Link
+                    href={`/projects/${projectId}/documents/${source.documentId}#chunk-${source.chunkIndex}`}
+                    className="inline-flex items-center gap-1 rounded-lg border border-black/[0.06] bg-white px-2.5 py-0.5 font-bold text-ink transition-all duration-300 hover:bg-black/[0.02]"
+                  >
+                    查看片段
+                    <ExternalLink aria-hidden="true" size={11} />
+                  </Link>
                 </div>
                 <p className="break-words text-xs leading-5 text-slate-500 italic">
                   “{source.quote}”
@@ -560,6 +742,42 @@ function EvalRunPanel({ run }: { run: EvalRunDto }) {
             未能检索到任何来源片段。
           </p>
         )}
+      </div>
+    </section>
+  );
+}
+
+function SourceDiagnostics({ run }: { run: EvalRunDto }) {
+  const missingSources = run.diagnostics.missingExpectedSources;
+
+  return (
+    <section className="space-y-3">
+      <SectionTitle icon={Target} label="来源诊断" />
+      <div className="rounded-lg border border-black/[0.06] bg-white px-4 py-3">
+        <div className="flex flex-wrap gap-1.5">
+          {run.diagnostics.expectedSourceCoverage.map((source) => (
+            <span
+              key={source.source}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-bold ${
+                source.matched
+                  ? "border-emerald-100 bg-emerald-50/40 text-emerald-700"
+                  : "border-red-100 bg-red-50/40 text-red-600"
+              }`}
+            >
+              {source.matched ? (
+                <CheckCircle2 aria-hidden="true" size={12} />
+              ) : (
+                <XCircle aria-hidden="true" size={12} />
+              )}
+              {source.source}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          {missingSources.length === 0
+            ? "所有 expected sources 都已出现在 retrieved chunks 中。"
+            : `缺失来源：${missingSources.join("、")}`}
+        </p>
       </div>
     </section>
   );
@@ -607,21 +825,32 @@ function ResultStat({
   );
 }
 
-function SourceMatchPill({ sourceMatch }: { sourceMatch: boolean }) {
+function RetrievalModePill({ mode }: { mode: RetrievalModeDto }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.06] bg-slate-50 px-2.5 py-0.5 font-bold text-slate-600">
+      <BarChart3 aria-hidden="true" size={12} />
+      {retrievalModeLabels[mode]}
+    </span>
+  );
+}
+
+function SourceMatchPill({ run }: { run: EvalRunDto }) {
+  const missingCount = run.diagnostics.missingExpectedSources.length;
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 font-bold ${
-        sourceMatch
+        run.sourceMatch
           ? "border-black/[0.06] bg-slate-50 text-emerald-600"
           : "border-black/[0.06] bg-slate-50 text-red-500"
       }`}
     >
-      {sourceMatch ? (
+      {run.sourceMatch ? (
         <CheckCircle2 aria-hidden="true" size={12} />
       ) : (
         <XCircle aria-hidden="true" size={12} />
       )}
-      {sourceMatch ? "来源命中" : "来源缺失"}
+      {run.sourceMatch ? "来源命中" : `缺 ${missingCount} 个来源`}
     </span>
   );
 }
@@ -715,6 +944,17 @@ function parseTextList(value: string) {
   ];
 }
 
+function pickLatestRun(runs: Array<EvalRunDto | null>) {
+  return (
+    runs
+      .filter((run): run is EvalRunDto => Boolean(run))
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      )[0] ?? null
+  );
+}
+
 function toUserFacingError(code: string, fallbackMessage: string) {
   if (code === "EVAL_UNAVAILABLE") {
     return "请先上传文档并等待摄取完成，再运行评估。";
@@ -731,38 +971,12 @@ function toUserFacingError(code: string, fallbackMessage: string) {
   return fallbackMessage || "无法处理评估请求。";
 }
 
-function formatTokenUsage(value: unknown): string {
-  if (!value) {
-    return "未记录";
+function formatRetrievalMetrics(run: EvalRunDto): string {
+  if (!run.retrievalMetrics) {
+    return retrievalModeLabels[run.retrievalMode];
   }
 
-  const totalTokens = extractTotalTokens(value);
-
-  return totalTokens ? `${totalTokens} tokens` : "已记录";
-}
-
-function extractTotalTokens(value: unknown): number | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  const directTotal = value.total_tokens ?? value.totalTokens;
-
-  if (typeof directTotal === "number" && Number.isFinite(directTotal)) {
-    return directTotal;
-  }
-
-  const nestedTotals = Object.values(value)
-    .map(extractTotalTokens)
-    .filter((item): item is number => typeof item === "number");
-
-  return nestedTotals.length > 0
-    ? nestedTotals.reduce((total, item) => total + item, 0)
-    : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return `${run.retrievalMetrics.candidateCount} -> ${run.retrievalMetrics.returnedCount}`;
 }
 
 function formatDateTime(value: string) {

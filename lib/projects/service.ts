@@ -1,6 +1,9 @@
 import type { DocumentStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { createProjectSchema } from "@/lib/projects/schemas";
+import {
+  createProjectSchema,
+  deleteProjectSchema
+} from "@/lib/projects/schemas";
 import {
   toProjectDto,
   type ProjectActivityDto,
@@ -27,6 +30,13 @@ type EvalOverviewRow = {
 };
 
 const PROJECT_ACTIVITY_LIMIT = 8;
+
+export class ProjectDeleteConfirmationError extends Error {
+  constructor() {
+    super("Project name confirmation does not match.");
+    this.name = "ProjectDeleteConfirmationError";
+  }
+}
 
 export async function listProjects(): Promise<ProjectDto[]> {
   const projects = await prisma.project.findMany({
@@ -376,6 +386,41 @@ export async function createProject(
   });
 
   return toProjectDto(project);
+}
+
+// 永久删除项目，并依赖数据库级联清理文档、chunks、结构化记忆、Ask 与 Eval 数据。
+export async function deleteProject(
+  projectId: string,
+  input: unknown
+): Promise<{ deletedProjectId: string } | null> {
+  const data = deleteProjectSchema.parse(input);
+  const project = await prisma.project.findUnique({
+    where: {
+      id: projectId
+    },
+    select: {
+      id: true,
+      name: true
+    }
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  if (data.confirmationName !== project.name) {
+    throw new ProjectDeleteConfirmationError();
+  }
+
+  await prisma.project.delete({
+    where: {
+      id: project.id
+    }
+  });
+
+  return {
+    deletedProjectId: project.id
+  };
 }
 
 function buildDocumentOverview(

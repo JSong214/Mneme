@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/lib/api/errors";
-import { getProjectDocumentDetail } from "@/lib/documents/service";
+import {
+  deleteProjectDocument,
+  getProjectDocumentDetail
+} from "@/lib/documents/service";
 
 type RouteContext = {
   params: {
@@ -23,5 +26,22 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   } catch (error) {
     console.error("Failed to load document detail", error);
     return apiError(500, "INTERNAL_ERROR", "Unable to load document detail.");
+  }
+}
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const { projectId, documentId } = context.params;
+
+  try {
+    const result = await deleteProjectDocument(projectId, documentId);
+
+    if (!result) {
+      return apiError(404, "DOCUMENT_NOT_FOUND", "Document was not found.");
+    }
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Failed to delete document", error);
+    return apiError(500, "INTERNAL_ERROR", "Unable to delete document.");
   }
 }

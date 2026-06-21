@@ -69,6 +69,24 @@ export async function listProjectAskRuns(
   };
 }
 
+export async function deleteProjectAskRun(
+  projectId: string,
+  runId: string
+): Promise<ProjectAskRunsDto | null> {
+  const result = await prisma.askRun.deleteMany({
+    where: {
+      id: runId,
+      projectId
+    }
+  });
+
+  if (result.count === 0) {
+    return null;
+  }
+
+  return listProjectAskRuns(projectId);
+}
+
 // 执行完整 Ask pipeline：检索上下文、生成结构化答案，并保存一次问答记录。
 export async function askProjectQuestion(
   projectId: string,

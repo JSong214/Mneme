@@ -177,6 +177,8 @@ model EvalRun {
   sourceMatch       Boolean
   groundednessScore Int
   latencyMs         Int
+  retrievalMode     RetrievalMode @default(BASELINE)
+  retrievalMetrics  Json?
   tokenUsage        Json?
   createdAt         DateTime @default(now())
 
@@ -207,4 +209,11 @@ enum RiskSeverity {
   HIGH   @map("high")
 
   @@map("risk_severity")
+}
+
+enum RetrievalMode {
+  BASELINE @map("baseline")
+  RERANK   @map("rerank")
+
+  @@map("retrieval_mode")
 }

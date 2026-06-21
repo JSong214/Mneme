@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   UploadCloud
 } from "lucide-react";
+import { DeleteDocumentButton } from "@/app/projects/[projectId]/documents/delete-document-button";
 import type {
   DocumentDto,
   DocumentStatusDto,
@@ -190,7 +191,7 @@ export function DocumentsClient({
         </div>
 
         {/* 顶部统计栏 */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
           {summaryItems.map((item, index) => {
             const Icon = item.icon;
             const style = documentSummaryStyles[item.id];
@@ -272,13 +273,26 @@ export function DocumentsClient({
                   <span className="font-semibold text-slate-600 text-sm">
                     {document.extractedMemoryCount} 条记忆
                   </span>
-                  <Link
-                    href={`/projects/${projectId}/documents/${document.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-2.5 py-1 font-semibold text-ink transition-all duration-300 ease-smooth hover:bg-black/[0.02] focus:outline-none text-xs"
-                  >
-                    <ExternalLink aria-hidden="true" size={12} />
-                    查看来源
-                  </Link>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Link
+                      href={`/projects/${projectId}/documents/${document.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-2.5 py-1 font-semibold text-ink transition-all duration-300 ease-smooth hover:bg-black/[0.02] focus:outline-none text-xs"
+                    >
+                      <ExternalLink aria-hidden="true" size={12} />
+                      查看来源
+                    </Link>
+                    <DeleteDocumentButton
+                      compact
+                      projectId={projectId}
+                      documentId={document.id}
+                      fileName={document.fileName}
+                      onDeleted={(payload) => {
+                        setDocuments(payload.documents);
+                        setSummary(payload.summary);
+                      }}
+                      onError={(message) => setError(message || null)}
+                    />
+                  </div>
                 </div>
               </article>
             ))}

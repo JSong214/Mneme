@@ -235,18 +235,21 @@ Eval page 展示：
 
 ## Tech Stack
 
+当前已实现技术栈：
+
 - `Next.js`
 - `React`
 - `TypeScript`
 - `Tailwind CSS`
-- `shadcn/ui`
+- `lucide-react`
 - `PostgreSQL`
 - `pgvector`
 - `Prisma`
-- `OpenAI SDK`
+- OpenAI `Responses API` 和 `Embeddings API` 的 direct HTTP integration
 - `Zod`
-- `Langfuse`
 - local JSON eval dataset
+
+未实现但可作为后续方向：`Langfuse` observability、完整组件库集成。
 
 目标部署方式：
 
@@ -278,14 +281,12 @@ project-memory-assistant/
 
 ## Environment Variables
 
-预计使用：
+当前使用：
 
 ```text
 DATABASE_URL=
 OPENAI_API_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_BASEURL=
+OPENAI_API_BASE_URL= # optional, defaults to https://api.openai.com/v1
 ```
 
 不要提交真实 secrets。
@@ -324,7 +325,7 @@ MVP 成功标准：
 
 V2 方向：
 
-1. 加入 reranking，并与 MVP baseline 对比 eval 结果。
+1. 升级 reranking 方案；当前已有 baseline vs lightweight rerank 的 Eval 对比，后续可加入模型 reranker。
 2. 支持 PDF。
 3. 支持 Slack 或 Notion import。
 4. 加入 authentication 和 multi-user workspaces。
@@ -337,4 +338,3 @@ V2 方向：
 ## Project Spec
 
 完整 product spec 和 technical design 见 [PROJECT_SPEC.md](./PROJECT_SPEC.md)。
-

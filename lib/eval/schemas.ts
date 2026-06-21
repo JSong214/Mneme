@@ -11,6 +11,8 @@ const evalListItemSchema = z
   .min(1, "Expected item is required.")
   .max(MAX_EVAL_LIST_ITEM_LENGTH, "Expected item is too long.");
 
+export const retrievalModeSchema = z.enum(["baseline", "rerank"]);
+
 export const createEvalCaseSchema = z.object({
   question: z
     .string()
@@ -30,6 +32,7 @@ export const createEvalCaseSchema = z.object({
 export const runEvalSchema = z
   .object({
     evalCaseId: z.string().trim().min(1).optional(),
+    retrievalMode: retrievalModeSchema.default("baseline"),
   })
   .strict();
 

@@ -214,6 +214,25 @@ export async function getProjectDocumentDetail(
   };
 }
 
+// 永久删除文档，并依赖级联关系清理该文档的 chunks 与结构化记忆。
+export async function deleteProjectDocument(
+  projectId: string,
+  documentId: string
+): Promise<ProjectDocumentsDto | null> {
+  const result = await prisma.document.deleteMany({
+    where: {
+      id: documentId,
+      projectId
+    }
+  });
+
+  if (result.count === 0) {
+    return null;
+  }
+
+  return getProjectDocuments(projectId);
+}
+
 async function getProjectDocuments(
   projectId: string
 ): Promise<ProjectDocumentsDto> {

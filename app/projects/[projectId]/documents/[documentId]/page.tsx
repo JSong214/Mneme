@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { DeleteDocumentButton } from "@/app/projects/[projectId]/documents/delete-document-button";
 import { getProjectDocumentDetail } from "@/lib/documents/service";
 import type { DocumentStatusDto } from "@/lib/documents/types";
 import type {
@@ -142,6 +143,12 @@ export default async function DocumentDetailPage({
                 label={`${memoryTotal} 条记忆`}
               />
               <MetaPill icon={FileText} label={document.mimeType} />
+              <DeleteDocumentButton
+                projectId={project.id}
+                documentId={document.id}
+                fileName={document.fileName}
+                redirectHref={`/projects/${project.id}/documents`}
+              />
             </div>
           </div>
 

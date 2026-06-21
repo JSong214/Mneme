@@ -13,4 +13,12 @@ export const createProjectSchema = z.object({
     .optional()
 });
 
+export const deleteProjectSchema = z.object({
+  confirmationName: z
+    .string({ required_error: "Project confirmation name is required." })
+    .trim()
+    .min(1, "Project confirmation name is required.")
+});
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+export type DeleteProjectInput = z.infer<typeof deleteProjectSchema>;

@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Database,
   ExternalLink,
+  FileDown,
   FileText,
   Lightbulb,
   MessageSquareText,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { ProjectDangerZone } from "@/app/projects/[projectId]/project-danger-zone";
 import type {
   ProjectActivityDto,
   ProjectActivityType,
@@ -93,6 +95,13 @@ const workspaceItems: WorkspaceItem[] = [
     icon: Radar,
     status: "可用",
     href: "eval",
+  },
+  {
+    title: "简报",
+    description: "导出 onboarding brief 和项目摘要。",
+    icon: FileDown,
+    status: "可用",
+    href: "brief",
   },
 ];
 
@@ -232,6 +241,11 @@ export default async function ProjectDetailPage({
       iconWrapper: "bg-purple-50 text-purple-700 border-purple-100",
       hoverBorder: "hover:border-purple-300",
       linkText: "text-purple-700",
+    },
+    简报: {
+      iconWrapper: "bg-rose-50 text-rose-700 border-rose-100",
+      hoverBorder: "hover:border-rose-300",
+      linkText: "text-rose-700",
     },
   };
 
@@ -447,6 +461,19 @@ export default async function ProjectDetailPage({
             )}
           </aside>
         </div>
+
+        <ProjectDangerZone
+          projectId={project.id}
+          projectName={project.name}
+          summary={{
+            documents: overview.documents.total,
+            chunks: overview.chunks.total,
+            memories: overview.memories.total,
+            askRuns: overview.ask.totalRuns,
+            evalCases: overview.eval.totalCases,
+            evalRunsWithResults: overview.eval.casesWithRuns,
+          }}
+        />
       </div>
     </PageShell>
   );

@@ -533,20 +533,21 @@ Groundedness score:
 
 ## 13. Tech Stack
 
-Recommended MVP stack:
+Implemented MVP stack:
 
 - `Next.js`
 - `React`
 - `TypeScript`
 - `Tailwind CSS`
-- `shadcn/ui`
+- `lucide-react`
 - `PostgreSQL`
 - `pgvector`
 - `Prisma`
-- `OpenAI SDK`
+- Direct HTTP integration with OpenAI `Responses API` and `Embeddings API`
 - `Zod`
-- `Langfuse`
 - Local JSON eval dataset
+
+Not currently implemented: `Langfuse` observability and a full component library integration.
 
 Deployment target:
 
@@ -580,7 +581,7 @@ project-memory-assistant/
 
 Potential next steps after MVP:
 
-1. Add reranking and measure improvement in evals.
+1. Upgrade reranking beyond the current baseline vs lightweight rerank eval comparison.
 2. Add PDF support.
 3. Add Slack or Notion import.
 4. Add auth and multi-user workspaces.
@@ -600,4 +601,3 @@ The MVP is successful if:
 - The Memory page makes extracted project context easy to browse.
 - The Eval page demonstrates retrieval quality and groundedness.
 - The README clearly explains the architecture, RAG pipeline, memory model, and eval strategy.
-

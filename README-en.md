@@ -237,18 +237,21 @@ The eval page reports:
 
 ## Tech Stack
 
+Currently implemented stack:
+
 - `Next.js`
 - `React`
 - `TypeScript`
 - `Tailwind CSS`
-- `shadcn/ui`
+- `lucide-react`
 - `PostgreSQL`
 - `pgvector`
 - `Prisma`
-- `OpenAI SDK`
+- Direct HTTP integration with OpenAI `Responses API` and `Embeddings API`
 - `Zod`
-- `Langfuse`
 - local JSON eval dataset
+
+Not currently implemented, but suitable for future work: `Langfuse` observability and a full component library integration.
 
 Target deployment:
 
@@ -280,14 +283,12 @@ project-memory-assistant/
 
 ## Environment Variables
 
-The app is expected to use:
+The app currently uses:
 
 ```text
 DATABASE_URL=
 OPENAI_API_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_BASEURL=
+OPENAI_API_BASE_URL= # optional, defaults to https://api.openai.com/v1
 ```
 
 Do not commit real secrets.
@@ -326,7 +327,7 @@ The MVP is successful when:
 
 Planned V2 improvements:
 
-1. Add reranking and compare eval results against the MVP baseline.
+1. Upgrade reranking; the app now supports baseline vs lightweight rerank eval comparison, and a model reranker can be added later.
 2. Add PDF support.
 3. Add Slack or Notion import.
 4. Add authentication and multi-user workspaces.
@@ -339,4 +340,3 @@ Planned V2 improvements:
 ## Project Spec
 
 See [PROJECT_SPEC.md](./PROJECT_SPEC.md) for the full product spec and technical design.
-

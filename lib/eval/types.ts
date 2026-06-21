@@ -3,6 +3,14 @@ import {
   evalRetrievedSourcesSchema,
   type CreateEvalCaseInput
 } from "@/lib/eval/schemas";
+import type { RetrievalMetrics, RetrievalMode } from "@/lib/retrieval/service";
+
+export type RetrievalModeDto = RetrievalMode;
+
+export const retrievalModeLabels: Record<RetrievalModeDto, string> = {
+  baseline: "Baseline",
+  rerank: "Rerank"
+};
 
 export type EvalRetrievedSourceDto = {
   fileName: string;
@@ -11,6 +19,19 @@ export type EvalRetrievedSourceDto = {
   chunkIndex: number;
   distance: number;
   quote: string;
+  matchesExpectedSource: boolean;
+};
+
+export type EvalExpectedSourceCoverageDto = {
+  source: string;
+  matched: boolean;
+};
+
+export type EvalRunDiagnosticsDto = {
+  expectedSourceCoverage: EvalExpectedSourceCoverageDto[];
+  missingExpectedSources: string[];
+  matchedRetrievedSourceCount: number;
+  retrievedSourceCount: number;
 };
 
 export type EvalRunDto = {
@@ -22,7 +43,10 @@ export type EvalRunDto = {
   sourceMatch: boolean;
   groundednessScore: number;
   latencyMs: number;
+  retrievalMode: RetrievalModeDto;
+  retrievalMetrics: RetrievalMetrics | null;
   tokenUsage: unknown | null;
+  diagnostics: EvalRunDiagnosticsDto;
   createdAt: string;
 };
 
@@ -33,7 +57,19 @@ export type EvalCaseDto = {
   expectedSources: string[];
   expectedFacts: string[];
   latestRun: EvalRunDto | null;
+  latestRunsByMode: Record<RetrievalModeDto, EvalRunDto | null>;
   createdAt: string;
+};
+
+export type EvalModeSummaryDto = {
+  retrievalMode: RetrievalModeDto;
+  totalCases: number;
+  casesWithRuns: number;
+  sourceMatches: number;
+  sourceMisses: number;
+  averageGroundednessScore: number | null;
+  averageLatencyMs: number | null;
+  latestRunAt: string | null;
 };
 
 export type EvalSummaryDto = {
@@ -43,6 +79,7 @@ export type EvalSummaryDto = {
   sourceMisses: number;
   averageGroundednessScore: number | null;
   latestRunAt: string | null;
+  modeSummaries: Record<RetrievalModeDto, EvalModeSummaryDto>;
 };
 
 export type ProjectEvalDto = {
@@ -78,47 +115,72 @@ export type EvalRunRecord = {
   sourceMatch: boolean;
   groundednessScore: number;
   latencyMs: number;
+  retrievalMode?: string | null;
+  retrievalMetrics?: unknown | null;
   tokenUsage: unknown | null;
   createdAt: Date;
 };
 
-export type EvalCaseWithLatestRunRecord = EvalCaseRecord & {
-  latestRunId: string | null;
-  latestAnswerJson: unknown | null;
-  latestRetrievedSources: unknown | null;
-  latestSourceMatch: boolean | null;
-  latestGroundednessScore: number | null;
-  latestLatencyMs: number | null;
-  latestTokenUsage: unknown | null;
-  latestCreatedAt: Date | null;
-};
+const retrievalModes: RetrievalModeDto[] = ["baseline", "rerank"];
 
-export function toEvalRunDto(run: EvalRunRecord): EvalRunDto {
+export function toEvalRunDto(
+  run: EvalRunRecord,
+  expectedSources: string[] = []
+): EvalRunDto {
+  const retrievalMode = normalizeRetrievalMode(run.retrievalMode);
+  const retrievedSources = enrichRetrievedSources(
+    evalRetrievedSourcesSchema.parse(run.retrievedSources),
+    expectedSources
+  );
+
   return {
     id: run.id,
     projectId: run.projectId,
     evalCaseId: run.evalCaseId,
     answer: askAnswerSchema.parse(run.answerJson),
-    retrievedSources: evalRetrievedSourcesSchema.parse(run.retrievedSources),
+    retrievedSources,
     sourceMatch: run.sourceMatch,
     groundednessScore: run.groundednessScore,
     latencyMs: run.latencyMs,
+    retrievalMode,
+    retrievalMetrics: isRetrievalMetrics(run.retrievalMetrics)
+      ? run.retrievalMetrics
+      : null,
     tokenUsage: run.tokenUsage ?? null,
+    diagnostics: buildRunDiagnostics(expectedSources, retrievedSources),
     createdAt: run.createdAt.toISOString()
   };
 }
 
 export function toEvalCaseDto(
   evalCase: EvalCaseRecord,
-  latestRun: EvalRunRecord | null
+  latestRuns: EvalRunRecord[] | null = null
 ): EvalCaseDto {
+  const runs = (latestRuns ?? []).map((run) =>
+    toEvalRunDto(run, evalCase.expectedSources)
+  );
+  const latestRunsByMode = Object.fromEntries(
+    retrievalModes.map((mode) => [
+      mode,
+      runs.find((run) => run.retrievalMode === mode) ?? null
+    ])
+  ) as Record<RetrievalModeDto, EvalRunDto | null>;
+  const latestRun =
+    runs
+      .slice()
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      )[0] ?? null;
+
   return {
     id: evalCase.id,
     projectId: evalCase.projectId,
     question: evalCase.question,
     expectedSources: evalCase.expectedSources,
     expectedFacts: evalCase.expectedFacts,
-    latestRun: latestRun ? toEvalRunDto(latestRun) : null,
+    latestRun,
+    latestRunsByMode,
     createdAt: evalCase.createdAt.toISOString()
   };
 }
@@ -140,6 +202,9 @@ export function buildEvalSummary(cases: EvalCaseDto[]): EvalSummaryDto {
   const latestRuns = cases.flatMap((evalCase) =>
     evalCase.latestRun ? [evalCase.latestRun] : []
   );
+  const modeSummaries = Object.fromEntries(
+    retrievalModes.map((mode) => [mode, buildModeSummary(cases, mode)])
+  ) as Record<RetrievalModeDto, EvalModeSummaryDto>;
   const scoreTotal = latestRuns.reduce(
     (total, run) => total + run.groundednessScore,
     0
@@ -158,6 +223,96 @@ export function buildEvalSummary(cases: EvalCaseDto[]): EvalSummaryDto {
       latestRuns.length > 0
         ? Math.round((scoreTotal / latestRuns.length) * 10) / 10
         : null,
+    latestRunAt,
+    modeSummaries
+  };
+}
+
+function buildModeSummary(
+  cases: EvalCaseDto[],
+  retrievalMode: RetrievalModeDto
+): EvalModeSummaryDto {
+  const runs = cases.flatMap((evalCase) => {
+    const run = evalCase.latestRunsByMode[retrievalMode];
+
+    return run ? [run] : [];
+  });
+  const scoreTotal = runs.reduce(
+    (total, run) => total + run.groundednessScore,
+    0
+  );
+  const latencyTotal = runs.reduce((total, run) => total + run.latencyMs, 0);
+  const latestRunAt = runs
+    .map((run) => run.createdAt)
+    .sort()
+    .at(-1) ?? null;
+
+  return {
+    retrievalMode,
+    totalCases: cases.length,
+    casesWithRuns: runs.length,
+    sourceMatches: runs.filter((run) => run.sourceMatch).length,
+    sourceMisses: runs.filter((run) => !run.sourceMatch).length,
+    averageGroundednessScore:
+      runs.length > 0 ? Math.round((scoreTotal / runs.length) * 10) / 10 : null,
+    averageLatencyMs:
+      runs.length > 0 ? Math.round(latencyTotal / runs.length) : null,
     latestRunAt
   };
+}
+
+function enrichRetrievedSources(
+  sources: Array<Omit<EvalRetrievedSourceDto, "matchesExpectedSource">>,
+  expectedSources: string[]
+): EvalRetrievedSourceDto[] {
+  const expectedSourceNames = new Set(expectedSources.map(normalizeSourceName));
+
+  return sources.map((source) => ({
+    ...source,
+    matchesExpectedSource: expectedSourceNames.has(
+      normalizeSourceName(source.fileName)
+    )
+  }));
+}
+
+function buildRunDiagnostics(
+  expectedSources: string[],
+  retrievedSources: EvalRetrievedSourceDto[]
+): EvalRunDiagnosticsDto {
+  const retrievedFileNames = new Set(
+    retrievedSources.map((source) => normalizeSourceName(source.fileName))
+  );
+  const expectedSourceCoverage = expectedSources.map((source) => ({
+    source,
+    matched: retrievedFileNames.has(normalizeSourceName(source))
+  }));
+
+  return {
+    expectedSourceCoverage,
+    missingExpectedSources: expectedSourceCoverage
+      .filter((source) => !source.matched)
+      .map((source) => source.source),
+    matchedRetrievedSourceCount: retrievedSources.filter(
+      (source) => source.matchesExpectedSource
+    ).length,
+    retrievedSourceCount: retrievedSources.length
+  };
+}
+
+function normalizeRetrievalMode(value: string | null | undefined): RetrievalModeDto {
+  return value === "rerank" ? "rerank" : "baseline";
+}
+
+function normalizeSourceName(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isRetrievalMetrics(value: unknown): value is RetrievalMetrics {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const record = value as Partial<RetrievalMetrics>;
+
+  return record.mode === "baseline" || record.mode === "rerank";
 }

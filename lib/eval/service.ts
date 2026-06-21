@@ -14,20 +14,25 @@ import {
   buildEvalSummary,
   toEvalCaseDto,
   toEvalRunDto,
-  type EvalCaseDto,
   type EvalCaseMutationDto,
   type EvalCaseRecord,
-  type EvalCaseWithLatestRunRecord,
   type EvalRetrievedSourceDto,
   type EvalRunDto,
   type EvalRunMutationDto,
   type EvalRunRecord,
-  type ProjectEvalDto
+  type ProjectEvalDto,
+  type RetrievalModeDto
 } from "@/lib/eval/types";
 import {
   retrieveProjectContext,
-  type RetrievedProjectContext
+  type RetrievedProjectContext,
+  type RetrievalMetrics
 } from "@/lib/retrieval/service";
+
+type StoredEvalRetrievedSource = Omit<
+  EvalRetrievedSourceDto,
+  "matchesExpectedSource"
+>;
 
 const GROUNDNESS_JUDGE_SYSTEM_PROMPT =
   "你是 Project Memory Assistant 的 eval judge。请根据用户问题、expected facts、生成回答、回答引用证据和检索片段，判断回答是否被证据支持。只返回 JSON，不要输出额外说明。groundednessScore 必须是 1 到 5 的整数：1 表示 unsupported or hallucinated，2 表示 weakly supported，3 表示 partially supported，4 表示 mostly supported，5 表示 fully supported。";
@@ -103,7 +108,7 @@ export async function createProjectEvalCase(
   const projectEval = await getProjectEval(projectId);
 
   return {
-    case: toEvalCaseDto(record, null),
+    case: toEvalCaseDto(record, []),
     summary: projectEval.summary
   };
 }
@@ -119,6 +124,7 @@ export async function runProjectEval(
   }
 
   const parsedInput = runEvalSchema.parse(input);
+  const retrievalMode = parsedInput.retrievalMode;
   const cases = parsedInput.evalCaseId
     ? [await findEvalCase(projectId, parsedInput.evalCaseId)]
     : await listEvalCases(projectId);
@@ -155,7 +161,7 @@ export async function runProjectEval(
   const runs: EvalRunDto[] = [];
 
   for (const evalCase of evalCases) {
-    runs.push(await runSingleEvalCase(evalCase));
+    runs.push(await runSingleEvalCase(evalCase, retrievalMode));
   }
 
   const projectEval = await getProjectEval(projectId);
@@ -167,10 +173,13 @@ export async function runProjectEval(
 }
 
 async function runSingleEvalCase(
-  evalCase: EvalCaseRecord
+  evalCase: EvalCaseRecord,
+  retrievalMode: RetrievalModeDto
 ): Promise<EvalRunDto> {
   const startedAt = Date.now();
-  const context = await retrieveProjectContext(evalCase.projectId, evalCase.question);
+  const context = await retrieveProjectContext(evalCase.projectId, evalCase.question, {
+    retrievalMode
+  });
   const { answer, tokenUsage: answerTokenUsage } =
     await generateProjectAnswerFromContext(evalCase.question, context);
   const retrievedSources = buildRetrievedSources(context);
@@ -186,6 +195,8 @@ async function runSingleEvalCase(
     sourceMatch,
     groundednessScore,
     latencyMs,
+    retrievalMode,
+    retrievalMetrics: context.retrievalMetrics,
     tokenUsage: buildTokenUsage(answerTokenUsage, judgeTokenUsage)
   });
 }
@@ -193,7 +204,7 @@ async function runSingleEvalCase(
 async function judgeGroundedness(
   evalCase: EvalCaseRecord,
   answer: AskAnswer,
-  retrievedSources: EvalRetrievedSourceDto[]
+  retrievedSources: StoredEvalRetrievedSource[]
 ) {
   const response = await createStructuredResponse(
     [
@@ -221,14 +232,17 @@ async function judgeGroundedness(
 async function saveEvalRun(input: {
   evalCase: EvalCaseRecord;
   answer: AskAnswer;
-  retrievedSources: EvalRetrievedSourceDto[];
+  retrievedSources: StoredEvalRetrievedSource[];
   sourceMatch: boolean;
   groundednessScore: number;
   latencyMs: number;
+  retrievalMode: RetrievalModeDto;
+  retrievalMetrics: RetrievalMetrics;
   tokenUsage: unknown | null;
 }): Promise<EvalRunDto> {
   const answerJson = JSON.stringify(input.answer);
   const retrievedSourcesJson = JSON.stringify(input.retrievedSources);
+  const retrievalMetricsJson = JSON.stringify(input.retrievalMetrics);
   const tokenUsageJson = input.tokenUsage ? JSON.stringify(input.tokenUsage) : null;
   const [record] = await prisma.$queryRaw<EvalRunRecord[]>`
     INSERT INTO "eval_runs" (
@@ -240,6 +254,8 @@ async function saveEvalRun(input: {
       "sourceMatch",
       "groundednessScore",
       "latencyMs",
+      "retrievalMode",
+      "retrievalMetrics",
       "tokenUsage",
       "createdAt"
     )
@@ -252,6 +268,8 @@ async function saveEvalRun(input: {
       ${input.sourceMatch},
       ${input.groundednessScore},
       ${input.latencyMs},
+      ${input.retrievalMode}::retrieval_mode,
+      ${retrievalMetricsJson}::jsonb,
       CASE
         WHEN ${tokenUsageJson} IS NULL THEN NULL
         ELSE ${tokenUsageJson}::jsonb
@@ -267,16 +285,32 @@ async function saveEvalRun(input: {
       "sourceMatch",
       "groundednessScore",
       "latencyMs",
+      "retrievalMode"::text AS "retrievalMode",
+      "retrievalMetrics",
       "tokenUsage",
       "createdAt"
   `;
 
-  return toEvalRunDto(record);
+  return toEvalRunDto(record, input.evalCase.expectedSources);
 }
 
 async function getProjectEval(projectId: string): Promise<ProjectEvalDto> {
-  const rows = await listEvalCasesWithLatestRuns(projectId);
-  const cases = rows.map(rowToEvalCaseDto);
+  const [evalCases, latestRuns] = await Promise.all([
+    listEvalCases(projectId),
+    listLatestEvalRunsByCaseAndMode(projectId)
+  ]);
+  const runsByCaseId = new Map<string, EvalRunRecord[]>();
+
+  latestRuns.forEach((run) => {
+    const runs = runsByCaseId.get(run.evalCaseId) ?? [];
+
+    runs.push(run);
+    runsByCaseId.set(run.evalCaseId, runs);
+  });
+
+  const cases = evalCases.map((evalCase) =>
+    toEvalCaseDto(evalCase, runsByCaseId.get(evalCase.id) ?? [])
+  );
 
   return {
     cases,
@@ -331,61 +365,32 @@ async function findEvalCase(
   return record ?? null;
 }
 
-async function listEvalCasesWithLatestRuns(
+async function listLatestEvalRunsByCaseAndMode(
   projectId: string
-): Promise<EvalCaseWithLatestRunRecord[]> {
-  return prisma.$queryRaw<EvalCaseWithLatestRunRecord[]>`
-    SELECT
-      ec."id",
-      ec."projectId",
-      ec."question",
-      ec."expectedSources",
-      ec."expectedFacts",
-      ec."createdAt",
-      er."id" AS "latestRunId",
-      er."answerJson" AS "latestAnswerJson",
-      er."retrievedSources" AS "latestRetrievedSources",
-      er."sourceMatch" AS "latestSourceMatch",
-      er."groundednessScore" AS "latestGroundednessScore",
-      er."latencyMs" AS "latestLatencyMs",
-      er."tokenUsage" AS "latestTokenUsage",
-      er."createdAt" AS "latestCreatedAt"
-    FROM "eval_cases" ec
-    LEFT JOIN LATERAL (
-      SELECT *
-      FROM "eval_runs" er
-      WHERE er."evalCaseId" = ec."id"
-      ORDER BY er."createdAt" DESC
-      LIMIT 1
-    ) er ON true
-    WHERE ec."projectId" = ${projectId}
-    ORDER BY ec."createdAt" DESC
+): Promise<EvalRunRecord[]> {
+  return prisma.$queryRaw<EvalRunRecord[]>`
+    SELECT DISTINCT ON ("evalCaseId", "retrievalMode")
+      "id",
+      "projectId",
+      "evalCaseId",
+      "answerJson",
+      "retrievedSources",
+      "sourceMatch",
+      "groundednessScore",
+      "latencyMs",
+      "retrievalMode"::text AS "retrievalMode",
+      "retrievalMetrics",
+      "tokenUsage",
+      "createdAt"
+    FROM "eval_runs"
+    WHERE "projectId" = ${projectId}
+    ORDER BY "evalCaseId", "retrievalMode", "createdAt" DESC
   `;
-}
-
-function rowToEvalCaseDto(row: EvalCaseWithLatestRunRecord): EvalCaseDto {
-  const latestRun =
-    row.latestRunId && row.latestCreatedAt
-      ? {
-          id: row.latestRunId,
-          projectId: row.projectId,
-          evalCaseId: row.id,
-          answerJson: row.latestAnswerJson,
-          retrievedSources: row.latestRetrievedSources,
-          sourceMatch: row.latestSourceMatch ?? false,
-          groundednessScore: row.latestGroundednessScore ?? 1,
-          latencyMs: row.latestLatencyMs ?? 0,
-          tokenUsage: row.latestTokenUsage,
-          createdAt: row.latestCreatedAt
-        }
-      : null;
-
-  return toEvalCaseDto(row, latestRun);
 }
 
 function buildRetrievedSources(
   context: RetrievedProjectContext
-): EvalRetrievedSourceDto[] {
+): StoredEvalRetrievedSource[] {
   return context.chunks.map((chunk) => ({
     fileName: chunk.fileName,
     documentId: chunk.documentId,
@@ -398,7 +403,7 @@ function buildRetrievedSources(
 
 function checkSourceMatch(
   expectedSources: string[],
-  retrievedSources: EvalRetrievedSourceDto[]
+  retrievedSources: StoredEvalRetrievedSource[]
 ) {
   const retrievedFileNames = new Set(
     retrievedSources.map((source) => normalizeSourceName(source.fileName))
@@ -412,7 +417,7 @@ function checkSourceMatch(
 function formatGroundednessJudgeInput(
   evalCase: EvalCaseRecord,
   answer: AskAnswer,
-  retrievedSources: EvalRetrievedSourceDto[]
+  retrievedSources: StoredEvalRetrievedSource[]
 ) {
   return [
     `问题: ${evalCase.question}`,
