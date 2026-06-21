@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { MAX_ASK_QUESTION_LENGTH } from "@/lib/ask/constants";
 import type { AskConfidence } from "@/lib/ask/schemas";
 import type { AskRunDto, ProjectAskRunsDto } from "@/lib/ask/types";
@@ -93,6 +94,8 @@ export function AskClient({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
+  const [runPendingDeletion, setRunPendingDeletion] =
+    useState<AskRunDto | null>(null);
   const selectedRun =
     runs.find((run) => run.id === selectedRunId) ?? runs[0] ?? null;
 
@@ -151,21 +154,21 @@ export function AskClient({
     }
   }
 
-  async function handleDeleteRun(run: AskRunDto) {
+  function handleRequestDeleteRun(run: AskRunDto) {
     setHistoryError(null);
+    setRunPendingDeletion(run);
+  }
 
-    const confirmed = window.confirm(
-      [
-        "确定要永久删除这条问答记录吗？",
-        `问题：${run.question}`,
-        "该操作只删除这次历史记录，不会删除原始文档。"
-      ].join("\n\n")
-    );
-
-    if (!confirmed) {
+  function handleCloseDeleteRunDialog() {
+    if (deletingRunId) {
       return;
     }
 
+    setRunPendingDeletion(null);
+  }
+
+  async function handleDeleteRun(run: AskRunDto) {
+    setHistoryError(null);
     setDeletingRunId(run.id);
 
     try {
@@ -192,6 +195,7 @@ export function AskClient({
 
         return currentSelectedRunId;
       });
+      setRunPendingDeletion(null);
       router.refresh();
     } catch {
       setHistoryError("无法删除问答记录。");
@@ -354,7 +358,7 @@ export function AskClient({
                   <button
                     type="button"
                     aria-label="删除问答记录"
-                    onClick={() => handleDeleteRun(run)}
+                    onClick={() => handleRequestDeleteRun(run)}
                     disabled={deletingRunId === run.id}
                     className="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-red-100 bg-white text-red-500 transition-all duration-300 hover:bg-red-50 focus:outline-none focus:ring-1 focus:ring-red-200 disabled:cursor-not-allowed disabled:text-slate-300"
                   >
@@ -378,6 +382,31 @@ export function AskClient({
           </p>
         )}
       </aside>
+      <ConfirmDialog
+        open={Boolean(runPendingDeletion)}
+        title="永久删除这条问答记录？"
+        description="该操作只删除这次历史问答记录，不会删除原始文档、chunks 或项目记忆。删除后无法从最近问答中恢复。"
+        confirmLabel="永久删除"
+        isConfirming={Boolean(deletingRunId)}
+        onConfirm={() => {
+          if (runPendingDeletion) {
+            handleDeleteRun(runPendingDeletion);
+          }
+        }}
+        onClose={handleCloseDeleteRunDialog}
+      >
+        {runPendingDeletion ? (
+          <div className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs leading-5 text-red-700">
+            <span className="font-semibold text-red-800">问题：</span>
+            <span className="ml-1 break-words">{runPendingDeletion.question}</span>
+          </div>
+        ) : null}
+        {historyError ? (
+          <p className="mt-3 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-medium text-red-600">
+            {historyError}
+          </p>
+        ) : null}
+      </ConfirmDialog>
     </div>
   );
 }

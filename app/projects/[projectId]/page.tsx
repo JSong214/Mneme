@@ -90,18 +90,18 @@ const workspaceItems: WorkspaceItem[] = [
     href: "memory",
   },
   {
-    title: "评估",
-    description: "检查证据召回和回答依据。",
-    icon: Radar,
-    status: "可用",
-    href: "eval",
-  },
-  {
     title: "简报",
     description: "导出 onboarding brief 和项目摘要。",
     icon: FileDown,
     status: "可用",
     href: "brief",
+  },
+  {
+    title: "评估",
+    description: "检查证据召回和回答依据。",
+    icon: Radar,
+    status: "可用",
+    href: "eval",
   },
 ];
 

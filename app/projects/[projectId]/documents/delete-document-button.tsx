@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { ProjectDocumentsDto } from "@/lib/documents/types";
 
 type DeleteDocumentButtonProps = {
@@ -34,25 +35,27 @@ export function DeleteDocumentButton({
   onError
 }: DeleteDocumentButtonProps) {
   const router = useRouter();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  async function handleDelete() {
+  function handleRequestDelete() {
     setLocalError(null);
     onError?.("");
+    setIsConfirmOpen(true);
+  }
 
-    const confirmed = window.confirm(
-      [
-        `确定要永久删除文档「${fileName}」吗？`,
-        "这会删除该文档的 chunks 和结构化项目记忆。",
-        "历史问答的答案文本和 quote 快照会保留，但查看原文的来源链接会失效。"
-      ].join("\n\n")
-    );
-
-    if (!confirmed) {
+  function handleCloseConfirm() {
+    if (isDeleting) {
       return;
     }
 
+    setIsConfirmOpen(false);
+  }
+
+  async function handleConfirmDelete() {
+    setLocalError(null);
+    onError?.("");
     setIsDeleting(true);
 
     try {
@@ -73,6 +76,7 @@ export function DeleteDocumentButton({
       }
 
       onDeleted?.(payload);
+      setIsConfirmOpen(false);
 
       if (redirectHref) {
         router.push(redirectHref);
@@ -91,7 +95,7 @@ export function DeleteDocumentButton({
     <div className={compact ? "inline-flex" : "space-y-2"}>
       <button
         type="button"
-        onClick={handleDelete}
+        onClick={handleRequestDelete}
         disabled={isDeleting}
         className={
           compact
@@ -111,6 +115,24 @@ export function DeleteDocumentButton({
           {localError}
         </p>
       ) : null}
+      <ConfirmDialog
+        open={isConfirmOpen}
+        title={`永久删除「${fileName}」？`}
+        description="删除后，该文档的 chunks 与结构化项目记忆会被清理。历史问答的答案文本和 quote 快照会保留，但查看原文的来源链接会失效。"
+        confirmLabel="永久删除"
+        isConfirming={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={handleCloseConfirm}
+      >
+        <div className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs leading-5 text-red-700">
+          该操作不可恢复。删除前请确认你不再需要从历史问答跳回这份原文。
+        </div>
+        {localError ? (
+          <p className="mt-3 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-medium text-red-600">
+            {localError}
+          </p>
+        ) : null}
+      </ConfirmDialog>
     </div>
   );
 }
